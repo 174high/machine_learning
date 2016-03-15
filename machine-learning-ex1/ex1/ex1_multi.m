@@ -88,13 +88,14 @@ num_iters = 500;
 
 % Init Theta and Run Gradient Descent 
 theta = zeros(3, 1);
-[theta, J_history] = gradientDescentMulti(X, y, theta, alpha, num_iters);
-theta = zeros(3, 1);
 [theta, J_history1] = gradientDescentMulti(X, y, theta, .03, num_iters);
 theta = zeros(3, 1);
 [theta, J_history2] = gradientDescentMulti(X, y, theta, .01, num_iters);
 theta = zeros(3, 1);
 [theta, J_history3] = gradientDescentMulti(X, y, theta, .005, num_iters);
+theta = zeros(3, 1);
+[theta, J_history] = gradientDescentMulti(X, y, theta, alpha, num_iters); % Best alpha and iter
+
 
 % Plot the convergence graph
 figure;
