@@ -10,6 +10,8 @@ theta = zeros(size(X, 2), 1);
 %               to linear regression and put the result in theta.
 %
 
+theta = (X'*X)^(-1)*X'*y
+
 % ---------------------- Sample Solution ----------------------
 
 
