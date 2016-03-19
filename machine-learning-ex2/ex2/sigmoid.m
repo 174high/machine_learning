@@ -11,7 +11,7 @@ g = zeros(size(z));
 
 % 1/(1+e^-z)
 
-g = arrayfun(@(x) 1/(1+e^(-x)), z)
+g = arrayfun(@(x) 1/(1+e^(-x)), z);
 
 
 

@@ -20,13 +20,25 @@ grad = zeros(size(theta));
 % Note: grad should have the same dimensions as theta
 %
 
+% Vectorized version
 
-% arg1=bsxfun(@times, -y, log(h))
-% arg2=bsxfun(@times, (1-y), log(1-h))
+% h = 1 ./ (1+e.^(-X*theta)); % hypothesis.
+h = sigmoid(X*theta);
 
-h = 1 ./ (1+e.^(-X*theta)); % hypothesis
-J = 1/m * sum ( -y .* log(h) - (1-y).*(log(1-h)) );
-% grad = 
+% Cost function
+% J = 1/m * sum ( -y .* log(h) - (1-y).*(log(1-h)) );  % multiply each element then sum the col vector
+
+% OR
+
+J = 1/m * sum (-y' * log(h) - (1-y')*log(1-h) );  % Transpose the y'.  Sum the col vector
+
+% OR:
+
+% J = ((log(h')*-y) - log(1-h')*(1-y))/m    % transpose h', and move y to 2nd arg in multiply
+
+
+% Gradient
+grad = 1/m * X'*(h-y)
 
 % =============================================================
 
