@@ -18,19 +18,27 @@ J_history = zeros(num_iters, 1);
         %
 
         % we store theta afterwards because these operations are acted upon concurrently := to update the vector
-        store_theta = [];
-        for feature = 1:size(X,2)
-            theta(feature) = theta(feature) - (alpha/m) * sum(((X*theta)-y).*X(:,feature));
-            % store_theta = [store_theta; temp0]; 
-        end
+
+        % store_theta = [];
+        % for feature = 1:size(X,2)
+        %     theta(feature) = theta(feature) - (alpha/m) * sum( ((X*theta)-y).*X(:,feature) );
+        % end
+
+        % 1/m*alpha*sum( ((X*theta)-y)*X);
         % theta = store_theta;
 
-        % theta - (alpha * 1/m) * (theta'*X-y)
         % ============================================================
 
         % Save the cost J in every iteration    
+        % http://stackoverflow.com/questions/32274474/machine-learning-linear-regression-using-batch-gradient-descent
+        theta = theta - alpha * 1/m * (X')*(X*theta-y);
         J_history(iter) = computeCostMulti(X, y, theta);
-
     end
 
 end
+
+
+% Theta computed from gradient descent: 
+%  340412.659574 
+%  110631.050279 
+%  -6649.474271 

@@ -21,11 +21,12 @@ grad = zeros(size(theta));
 %
 
 
+% arg1=bsxfun(@times, -y, log(h))
+% arg2=bsxfun(@times, (1-y), log(1-h))
 
-
-
-
-
+h = 1 ./ (1+e.^(-X*theta)); % hypothesis
+J = 1/m * sum ( -y .* log(h) - (1-y).*(log(1-h)) );
+% grad = 
 
 % =============================================================
 
