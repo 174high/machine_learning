@@ -31,8 +31,20 @@ X = [ones(m, 1) X];
 %       
 
 
+[o,p] = max(sigmoid(X*all_theta'), [], 2);
+% [o,p] = max(sigmoid(X2*all_theta'), [], 2);
 
-
+% Iterative approach that didn't work...
+% storage = zeros(num_labels, 1);
+% for item = 1:m
+% 	for c = 1:num_labels
+% 		% p(c,:) = sigmoid(X(c,:)*all_theta(c,:)');
+% 		storage(c) = sigmoid(X(m,:)*all_theta(c,:)');
+% 	endfor
+% 	[v,max_index] = max(storage);
+% 	p(item) = max_index;
+% 	storage = zeros(num_labels, 1); % reset storage to all 0s
+% endfor
 
 
 

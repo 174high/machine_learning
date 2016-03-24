@@ -1,5 +1,17 @@
 %% Machine Learning Online Class - Exercise 3 | Part 1: One-vs-all
 
+
+% My notes:
+% Program utilizes 5000 rows of 20x20 pixels, thus a 5000x400 matrix of 
+% image data as the training set. Y is the output for the training set
+% 1-500 = 0, 501-1000=2, 1001-1500=3, etc.
+% oneVsAll calculates the classifiers (all_theta) given 500 entries of
+% each digit as the training set.
+%
+% After classifer is determined, we use predictOneVsAll to test the 
+% accuracy of the classifiers.
+
+
 %  Instructions
 %  ------------
 % 
@@ -39,6 +51,9 @@ m = size(X, 1);
 rand_indices = randperm(m);
 sel = X(rand_indices(1:100), :);
 
+
+% sel = X(1001:1500,:);	% Display 2 
+% sel = X(1501:2000,:); % Display 3
 displayData(sel);
 
 fprintf('Program paused. Press enter to continue.\n');
@@ -61,9 +76,9 @@ lambda = 0.1;
 % pause;
 
 
-% %% ================ Part 3: Predict for One-Vs-All ================
-% %  After ...
-% pred = predictOneVsAll(all_theta, X);
+%% ================ Part 3: Predict for One-Vs-All ================
+%  After ...
+pred = predictOneVsAll(all_theta, X);
 
-% fprintf('\nTraining Set Accuracy: %f\n', mean(double(pred == y)) * 100);
+fprintf('\nTraining Set Accuracy: %f\n', mean(double(pred == y)) * 100);
 
