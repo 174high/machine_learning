@@ -64,25 +64,25 @@ pred = predict(Theta1, Theta2, X);
 
 fprintf('\nTraining Set Accuracy: %f\n', mean(double(pred == y)) * 100);
 
-% fprintf('Program paused. Press enter to continue.\n');
-% pause;
+fprintf('Program paused. Press enter to continue.\n');
+pause;
 
-% %  To give you an idea of the network's output, you can also run
-% %  through the examples one at the a time to see what it is predicting.
+%  To give you an idea of the network's output, you can also run
+%  through the examples one at the a time to see what it is predicting.
 
-% %  Randomly permute examples
-% rp = randperm(m);
+%  Randomly permute examples
+rp = randperm(m);
 
-% for i = 1:m
-%     % Display 
-%     fprintf('\nDisplaying Example Image\n');
-%     displayData(X(rp(i), :));
+for i = 1:m
+    % Display 
+    fprintf('\nDisplaying Example Image\n');
+    displayData(X(rp(i), :));
 
-%     pred = predict(Theta1, Theta2, X(rp(i),:));
-%     fprintf('\nNeural Network Prediction: %d (digit %d)\n', pred, mod(pred, 10));
+    pred = predict(Theta1, Theta2, X(rp(i),:));
+    fprintf('\nNeural Network Prediction: %d (digit %d)\n', pred, mod(pred, 10));
     
-%     % Pause
-%     fprintf('Program paused. Press enter to continue.\n');
-%     pause;
-% end
+    % Pause
+    fprintf('Program paused. Press enter to continue.\n');
+    pause;
+end
 
