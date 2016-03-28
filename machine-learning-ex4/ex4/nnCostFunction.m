@@ -70,7 +70,21 @@ y_matrix = eye(num_labels)(y,:); % 5000x10 matrix
 % Y-matrix contains vectorized matrix of single values
 % When doing element wise multiplication, all other columns but colum set to 1s
 % will be set to 0 afer multiplying
-J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h)));
+
+%
+%  Non-regularized cost function:
+%
+% J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h)));
+
+
+% Part 1
+% Weight regularization parameter
+% Theta1(:,2:end) removes first column because this is the bias vector
+weight_reg_param = lambda/(2*m) * (sum(sum(Theta1(:,2:end).^2)) + sum(sum(Theta2(:,2:end).^2)));
+% Main cost function
+J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h))) + weight_reg_param;
+
+
 
 
 
@@ -108,20 +122,48 @@ J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h)));
 %               and Theta2_grad from Part 2.
 %
 
+% Refactor:  Add 1 to row directly instead of doing size...
+for t = 1:m
 
+%
+% Let:
+% m = the number of training examples
+% n = the number of training features, including the initial bias unit.
+% h = the number of units in the hidden layer - NOT including the bias unit
+% r = the number of output classifications
+%
 
+	% Step 1
+	a_1 = X(t,:)
+	a_1_size = size(a_1, 1)
+	a_1 = [ones(a_1_size,1) a_1]
 
+	z_2 = a_1*Theta1'
+	a_2 = sigmoid(z_2)
+	a_2_size = size(a_2, 1)
+	a_2 = [ones(a_2_size,1) a_2];
 
+	z_3 = a_2*Theta2';
+	a_3 = sigmoid(z_3);
 
+	% Step 2, output layer -- revisit?
+	d_3 = a_3-y_matrix(t,:);
 
+	% Step 3, hidden layer 
+	% (m x r) * (r x h) = m x h    
+	% (1 x 10) * (10 x 25) = (1 x 25)
+	d_2 = (d_3*Theta2(:,2:end)) .* sigmoidGradient(z_2)
 
+	% Step 4, accumulating gradient
 
+	% (h x m) * (m x n) = (h x n)
+	Delta_1 = a_1' * d_2(:,2:end); 
+	Delta_2 = a_2' * d_3(:,2:end);
+endfor
 
-
-
-
-
-
+% Step 5
+Theta1_grad = 1/m * Delta_1;
+Theta2_grad = 1/m * Delta_2;
 
 
 
