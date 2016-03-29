@@ -40,9 +40,8 @@ a_1 = [ones(m, 1) X];
 
 % Activation layer 2
 a_2 = sigmoid(a_1*Theta1');
-a_2_size = size(a_2, 1)
+a_2_size = size(a_2, 1);
 a_2 = [ones(a_2_size, 1) a_2];
-% a_2 = [ones(m, 1) a_2];
 
 % Activation layer 3
 a_3 = sigmoid(a_2*Theta2');
@@ -85,9 +84,6 @@ weight_reg_param = lambda/(2*m) * (sum(sum(Theta1(:,2:end).^2)) + sum(sum(Theta2
 J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h))) + weight_reg_param;
 
 
-
-
-
 % J = 1/m * sum(-y' * log(h) - (1-y')*log(1-h)) + lambda/(2*m) * sum( (theta(2:end).^2) );
 
 % ====================== YOUR CODE HERE ======================
@@ -122,9 +118,11 @@ J = 1/m * sum(sum(-y_matrix.*log(h) - (1-y_matrix).*log(1-h))) + weight_reg_para
 %               and Theta2_grad from Part 2.
 %
 
-% Refactor:  Add 1 to row directly instead of doing size...
-for t = 1:m
 
+Delta_1 = zeros(size(Theta1));
+Delta_2 = zeros(size(Theta2));
+
+for t = 1:m
 %
 % Let:
 % m = the number of training examples
@@ -132,19 +130,21 @@ for t = 1:m
 % h = the number of units in the hidden layer - NOT including the bias unit
 % r = the number of output classifications
 %
-
+	%
 	% Step 1
-	a_1 = X(t,:)
-	a_1_size = size(a_1, 1)
-	a_1 = [ones(a_1_size,1) a_1]
+	% activation layer 1 = input X
+	a_1 = X(t,:);
+	a_1_size = size(a_1, 1);
+	a_1 = [ones(a_1_size,1) a_1];
 
-	z_2 = a_1*Theta1'
-	a_2 = sigmoid(z_2)
-	a_2_size = size(a_2, 1)
+	% Calculate activation layer 2
+	z_2 = a_1*Theta1';
+	a_2 = sigmoid(z_2);
+	a_2_size = size(a_2, 1);
 	a_2 = [ones(a_2_size,1) a_2];
 
 	z_3 = a_2*Theta2';
-	a_3 = sigmoid(z_3);
+	a_3 = sigmoid(z_3); % h(x)
 
 	% Step 2, output layer -- revisit?
 	d_3 = a_3-y_matrix(t,:);
@@ -152,16 +152,18 @@ for t = 1:m
 	% Step 3, hidden layer 
 	% (m x r) * (r x h) = m x h    
 	% (1 x 10) * (10 x 25) = (1 x 25)
-	d_2 = (d_3*Theta2(:,2:end)) .* sigmoidGradient(z_2)
+	d_2 = (d_3*Theta2(:,2:end)) .* sigmoidGradient(z_2);
 
 	% Step 4, accumulating gradient
-
 	% (h x m) * (m x n) = (h x n)
-	Delta_1 = a_1' * d_2(:,2:end); 
-	Delta_2 = a_2' * d_3(:,2:end);
+	% Delta_1 = a_1' * d_2(:,2:end);  
+	% Delta_2 = a_2' * d_3(:,2:end);
+	Delta_1 += (a_1' * d_2)'; % (401 x 1 * 1 x 25) = (401 x 25)
+	Delta_2 += (a_2' * d_3)'; % (26 x 1 * 1 x 10) = (26 x 10) 
 endfor
 
 % Step 5
+% (h x n)
 Theta1_grad = 1/m * Delta_1;
 Theta2_grad = 1/m * Delta_2;
 

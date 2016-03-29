@@ -41,7 +41,7 @@ sel = sel(1:100);
 
 displayData(X(sel, :));
 
-fprintf('Program paused. Press enter to continue.\n');
+% fprintf('Program paused. Press enter to continue.\n');
 % pause;
 
 
@@ -80,7 +80,7 @@ J = nnCostFunction(nn_params, input_layer_size, hidden_layer_size, ...
 fprintf(['Cost at parameters (loaded from ex4weights): %f '...
          '\n(this value should be about 0.287629)\n'], J);
 
-fprintf('\nProgram paused. Press enter to continue.\n');
+% fprintf('\nProgram paused. Press enter to continue.\n');
 % pause;
 
 %% =============== Part 4: Implement Regularization ===============
@@ -99,7 +99,7 @@ J = nnCostFunction(nn_params, input_layer_size, hidden_layer_size, ...
 fprintf(['Cost at parameters (loaded from ex4weights): %f '...
          '\n(this value should be about 0.383770)\n'], J);
 
-fprintf('Program paused. Press enter to continue.\n');
+% fprintf('Program paused. Press enter to continue.\n');
 % pause;
 
 
@@ -116,7 +116,7 @@ fprintf('Sigmoid gradient evaluated at [1 -0.5 0 0.5 1]:\n  ');
 fprintf('%f ', g);
 fprintf('\n\n');
 
-fprintf('Program paused. Press enter to continue.\n');
+% fprintf('Program paused. Press enter to continue.\n');
 % pause;
 
 
@@ -146,8 +146,8 @@ fprintf('\nChecking Backpropagation... \n');
 %  Check gradients by running checkNNGradients
 checkNNGradients;
 
-fprintf('\nProgram paused. Press enter to continue.\n');
-pause;
+% fprintf('\nProgram paused. Press enter to continue.\n');
+% pause;
 
 
 %% =============== Part 8: Implement Regularization ===============
@@ -155,20 +155,20 @@ pause;
 %  continue to implement the regularization with the cost and gradient.
 %
 
-fprintf('\nChecking Backpropagation (w/ Regularization) ... \n')
+% fprintf('\nChecking Backpropagation (w/ Regularization) ... \n')
 
-%  Check gradients by running checkNNGradients
-lambda = 3;
-checkNNGradients(lambda);
+% %  Check gradients by running checkNNGradients
+% lambda = 3;
+% checkNNGradients(lambda);
 
-% Also output the costFunction debugging values
-debug_J  = nnCostFunction(nn_params, input_layer_size, ...
-                          hidden_layer_size, num_labels, X, y, lambda);
+% % Also output the costFunction debugging values
+% debug_J  = nnCostFunction(nn_params, input_layer_size, ...
+%                           hidden_layer_size, num_labels, X, y, lambda);
 
-fprintf(['\n\nCost at (fixed) debugging parameters (w/ lambda = 10): %f ' ...
-         '\n(this value should be about 0.576051)\n\n'], debug_J);
+% fprintf(['\n\nCost at (fixed) debugging parameters (w/ lambda = 10): %f ' ...
+%          '\n(this value should be about 0.576051)\n\n'], debug_J);
 
-fprintf('Program paused. Press enter to continue.\n');
+% fprintf('Program paused. Press enter to continue.\n');
 % pause;
 
 
