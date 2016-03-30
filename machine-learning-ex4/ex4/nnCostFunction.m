@@ -164,11 +164,12 @@ endfor
 
 % Step 5
 % (h x n)
-Theta1_grad = 1/m * Delta_1;
-Theta2_grad = 1/m * Delta_2;
 
-
-
+% Regularization parameter is lambda/m * ....
+% Remove first column of Theta and replace with 0s, so that when multiplied, it will not affect
+%  the first parameter
+Theta1_grad = 1/m * Delta_1 + lambda/m*[zeros(size(Delta_1,1),1), Theta1(:,2:end)];
+Theta2_grad = 1/m * Delta_2 + lambda/m*[zeros(size(Delta_2,1),1), Theta2(:,2:end)];
 
 % -------------------------------------------------------------
 
