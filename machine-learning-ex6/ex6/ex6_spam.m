@@ -37,8 +37,8 @@ fprintf('Word Indices: \n');
 fprintf(' %d', word_indices);
 fprintf('\n\n');
 
-fprintf('Program paused. Press enter to continue.\n');
-pause;
+% fprintf('Program paused. Press enter to continue.\n');
+% pause;
 
 %% ==================== Part 2: Feature Extraction ====================
 %  Now, you will convert each email into a vector of features in R^n. 
@@ -56,8 +56,8 @@ features      = emailFeatures(word_indices);
 fprintf('Length of feature vector: %d\n', length(features));
 fprintf('Number of non-zero entries: %d\n', sum(features > 0));
 
-fprintf('Program paused. Press enter to continue.\n');
-pause;
+% fprintf('Program paused. Press enter to continue.\n');
+% pause;
 
 %% =========== Part 3: Train Linear SVM for Spam Classification ========
 %  In this section, you will train a linear classifier to determine if an
@@ -70,6 +70,10 @@ load('spamTrain.mat');
 fprintf('\nTraining Linear SVM (Spam Classification)\n')
 fprintf('(this may take 1 to 2 minutes) ...\n')
 
+
+% My notes:
+% X is 4000 entries of emails, with 1899 features.  
+% y is output of whether the amil is spam or not
 C = 0.1;
 model = svmTrain(X, y, C, @linearKernel);
 
@@ -101,7 +105,7 @@ pause;
 %  'thinks' that these words are the most likely indicators of spam.
 %
 
-% Sort the weights and obtin the vocabulary list
+% Sort the weights and obtain the vocabulary list
 [weight, idx] = sort(model.w, 'descend');
 vocabList = getVocabList();
 
