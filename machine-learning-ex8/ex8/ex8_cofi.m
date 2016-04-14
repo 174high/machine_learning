@@ -35,12 +35,12 @@ fprintf('Average rating for movie 1 (Toy Story): %f / 5\n\n', ...
         mean(Y(1, R(1, :))));
 
 %  We can "visualize" the ratings matrix by plotting it with imagesc
-imagesc(Y);
-ylabel('Movies');
-xlabel('Users');
+% imagesc(Y);
+% ylabel('Movies');
+% xlabel('Users');
 
-fprintf('\nProgram paused. Press enter to continue.\n');
-pause;
+% fprintf('\nProgram paused. Press enter to continue.\n');
+% pause;
 
 %% ============ Part 2: Collaborative Filtering Cost Function ===========
 %  You will now implement the cost function for collaborative filtering.
@@ -65,8 +65,8 @@ J = cofiCostFunc([X(:) ; Theta(:)], Y, R, num_users, num_movies, ...
 fprintf(['Cost at loaded parameters: %f '...
          '\n(this value should be about 22.22)\n'], J);
 
-fprintf('\nProgram paused. Press enter to continue.\n');
-pause;
+% fprintf('\nProgram paused. Press enter to continue.\n');
+% pause;
 
 
 %% ============== Part 3: Collaborative Filtering Gradient ==============
@@ -79,8 +79,8 @@ fprintf('\nChecking Gradients (without regularization) ... \n');
 %  Check gradients by running checkNNGradients
 checkCostFunction;
 
-fprintf('\nProgram paused. Press enter to continue.\n');
-pause;
+% fprintf('\nProgram paused. Press enter to continue.\n');
+% pause;
 
 
 %% ========= Part 4: Collaborative Filtering Cost Regularization ========
@@ -96,8 +96,8 @@ J = cofiCostFunc([X(:) ; Theta(:)], Y, R, num_users, num_movies, ...
 fprintf(['Cost at loaded parameters (lambda = 1.5): %f '...
          '\n(this value should be about 31.34)\n'], J);
 
-fprintf('\nProgram paused. Press enter to continue.\n');
-pause;
+% fprintf('\nProgram paused. Press enter to continue.\n');
+% pause;
 
 
 %% ======= Part 5: Collaborative Filtering Gradient Regularization ======

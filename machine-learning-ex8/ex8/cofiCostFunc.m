@@ -39,20 +39,24 @@ Theta_grad = zeros(size(Theta));
 %        Theta_grad - num_users x num_features matrix, containing the 
 %                     partial derivatives w.r.t. to each element of Theta
 %
+% J = 1/2 * theta 
 
 
+% My notes:
+% Y = actual rating of movie
+% R = set to 1 if the user has rated the movie
 
+% Difference in predicted ratings and actual ratings
+predicted_rating_error = (X*Theta') - Y; 
 
+% Zero out all other predicted ratings that have NOT been rated.  Set others to 0
+rated_movies_error = predicted_rating_error.*R;
 
+% Now get the sum of cost of rated movies.
+J = 1/2*sum(sum(rated_movies_error.^2))  + lambda/2*sum(sum(Theta.^2)) + lambda/2*sum(sum(X.^2));
 
-
-
-
-
-
-
-
-
+X_grad = rated_movies_error * Theta + lambda .* X;
+Theta_grad = rated_movies_error' * X + lambda .* Theta;
 
 
 % =============================================================
