@@ -1,0 +1,9 @@
+Suppose you are learning to recognize cars from 100x100 pixel images (grayscale, not RG). Let features be pixel intensity values.  If you train logistic regression including all the quadratic terms (xi,xj) as features, about how many features will you have?
+
+Answer:
+
+50 million
+
+(100x100 pixels)^2 * 1/2 = 50 million
+
+More general term is O(n^2)/2
