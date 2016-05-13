@@ -27,17 +27,29 @@ def svm_loss_naive(W, X, y, reg):
   loss = 0.0
   for i in xrange(num_train):
     scores = X[i].dot(W)
+
     correct_class_score = scores[y[i]]
+    count = 0
+    saved_index = 0
     for j in xrange(num_classes):
       if j == y[i]:
+        # saved_index = j  # Don't need to save, continue skips 
         continue
+      else:
+        count += 1
+
       margin = scores[j] - correct_class_score + 1 # note delta = 1
       if margin > 0:
         loss += margin
+        dW[:,j] += X[i,:]     # j != y
+        dW[:,y[i]] -= X[i,:]  # j == y 
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
+
+  dW /= num_train
+  dW += reg*W
 
   # Add regularization to the loss.
   loss += 0.5 * reg * np.sum(W * W)
@@ -50,7 +62,15 @@ def svm_loss_naive(W, X, y, reg):
   # loss is being computed. As a result you may need to modify some of the    #
   # code above to compute the gradient.                                       #
   #############################################################################
+  """
+  
+  http://cs231n.github.io/optimization-1/
 
+
+  dW_y_i = -(1)*count*x_i IF margin > 0 and count = number of classes where j=y
+
+  dW_j = 1*count*x_i IF margin > 0 and count = number of classes where j!=y 
+  """
 
   return loss, dW
 
