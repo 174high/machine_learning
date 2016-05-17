@@ -49,7 +49,9 @@ def svm_loss_naive(W, X, y, reg):
       if margin > 0:  # max(0, s_j-s_y+delta)
         loss += margin
         dW[:,j] += X[i,:]     # j != y
-        dW[:,y[i]] -= X[i,:]  # j == y 
+        dW[:,y[i]] -= X[i,:]  # j == y  # contributing to loss function
+                              # important to note, y[i], so it will sums compared
+                              # to above dW[:,j] which runs only once per class
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
@@ -86,8 +88,6 @@ def svm_loss_naive(W, X, y, reg):
 
   dw_j runs where j!=y[i] and margin > 0 
 
-
-
   """
 
   return loss, dW
@@ -111,11 +111,11 @@ def svm_loss_vectorized(W, X, y, reg):
   num_train = X.shape[0]
   scores = X.dot(W)
   correct_class_scores = scores[np.arange(num_train), y]
-  margins = np.maximum(0,(scores - np.array([correct_class_scores]).transpose() + 1.0))
+  margins = np.maximum(0,(scores - np.array([correct_class_scores]).T + 1.0))
 
   # Omit the correct class score because it does not contribute to loss:
   margins[np.arange(num_train), y] = 0
-  
+
   loss = margins.sum()/len(margins)
   loss += .05 * reg * np.sum(W*W)
 
@@ -153,6 +153,37 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
+
+  """
+  Create matrix that will be dot product with X in order to sum.
+
+  Count each row where # of margins > 1.  This is for -1 * summation 
+  where the row corresponds to the correct class.  Others will be set to 1
+
+  Create matrix of ones, set to one where margins > 0.  
+  Set row,col = margins_gt_one, which is 
+
+  ex of this:
+  test=np.array([[1,2,3,4,5],[11,22,33,44,55],[111,222,333,444,555]])
+  test[np.arange(3), np.arange(3)]
+  test[np.arange(3), np.arange(3)] = [-1,-1,-1]
+  test
+
+  """
+  # Get total count of positives per row
+  total_positives = np.sum(margins>0, axis=1) # 500x10 -> 500,
+  mask = np.zeros(margins.shape)
+  mask[margins>0] = 1
+
+  # Set list of x_i,y_i where each x_i is correct class, which is total of 500.  
+  # Set to the list of total positives vector (dim 500)
+  # 500x10
+  mask[np.arange(num_train), y] = -total_positives 
+
+  dW = np.dot(mask.T, X)
+  dW /= num_train
+  dW = dW.T
+  dW += reg*W
 
   #############################################################################
   #                             END OF YOUR CODE                              #
