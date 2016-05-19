@@ -38,14 +38,14 @@ def softmax_loss_naive(W, X, y, reg):
     p = np.exp(scores) / np.sum(np.exp(scores))
     loss += -np.log(p[y[i]])
 
-    
-    for j in range(num_classes):
-      if j == y[i]:
-        dW[:,y[i]] -= X[i,:] 
-      else:
-        dW[:,j] += X[i,:]  
-        
+    exp_scores = np.exp(scores)
 
+    for j in range(num_classes):
+      #http://math.stackexchange.com/questions/945871/derivative-of-softmax-loss-function
+      #p_i (omit the  -y_i in the stack exchange)
+      dW[:,j] += np.exp(scores[j]) / np.sum(exp_scores) * X[i,:] # deriv of lost function
+      if j == y[i]:
+        dW[:,j] -= X[i,:] 
 
   loss /= num_train
   loss += 0.5 * reg * np.sum(W * W)
