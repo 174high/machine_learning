@@ -84,9 +84,26 @@ def softmax_loss_vectorized(W, X, y, reg):
   p = exp_scores/np.sum(exp_scores)
 
   norm_scores = (exp_scores.T/np.sum(exp_scores, axis=1)).T
-  
+
   loss = np.sum(-np.log(norm_scores[range(num_train), y]))
-  loss/=num_train
+  loss = loss / num_train + 0.5 * reg * np.sum(W*W)
+
+
+  """ 
+  Gradient
+  First set dW base as X.T * norm_scores
+
+  Then create mask that will subtract each correct class by X[i,:]
+  """
+  dW =  np.dot(X.T, norm_scores)
+  mask = np.zeros(norm_scores.shape)
+
+  # Subtract each row's correct class by X[i,:]
+  mask[range(X.shape[0]),y] = -1
+  cor_scores = np.dot(X.T, mask)
+  dW += cor_scores        
+
+  dW = dW / num_train + reg*W
 
   #############################################################################
   #                          END OF YOUR CODE                                 #
