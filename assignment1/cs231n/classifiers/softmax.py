@@ -78,7 +78,7 @@ def softmax_loss_vectorized(W, X, y, reg):
   #############################################################################
   
   scores = np.dot(X, W)
-  scores -= np.max(scores)
+  scores -= np.max(scores) # shift values to prevent numerical instability
 
   exp_scores = np.exp(scores)
   p = exp_scores/np.sum(exp_scores)

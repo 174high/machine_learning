@@ -74,7 +74,11 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    scores_1 = np.dot(X, W1) + b1
+    scores_1 = np.maximum(0,scores_1) # non-linearity/ReLU activation
+    scores_2 = np.dot(scores_1, W2) + b2
+    scores = scores_2 # shape (5, 3)
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
