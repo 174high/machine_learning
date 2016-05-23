@@ -34,7 +34,7 @@ def softmax_loss_naive(W, X, y, reg):
 
   for i in range(num_train):
     scores = np.dot(X[i], W) # one row of scores (10,)
-    scores -= np.max(scores)
+    scores -= np.max(scores) #normalize
 
     exp_scores = np.exp(scores)
     p = exp_scores / np.sum(exp_scores)
@@ -81,7 +81,7 @@ def softmax_loss_vectorized(W, X, y, reg):
   scores -= np.max(scores) # shift values to prevent numerical instability
 
   exp_scores = np.exp(scores)
-  p = exp_scores/np.sum(exp_scores)
+  # p = exp_scores/np.sum(exp_scores)
 
   norm_scores = (exp_scores.T/np.sum(exp_scores, axis=1)).T
 
