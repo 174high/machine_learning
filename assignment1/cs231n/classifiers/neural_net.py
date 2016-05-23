@@ -75,13 +75,13 @@ class TwoLayerNet(object):
     # shape (N, C).                                                             #
     #############################################################################
 
-    scores_l1 = np.dot(X, W1)                     # 1
-    scores_l1_bias = scores_l1 + b1               # 2   (5,10)
+    scores_l1 = np.dot(X, W1)                       # 1
+    scores_l1_bias = scores_l1 + b1                 # 2   (5,10)
     scores_l1_relu = np.maximum(0, scores_l1_bias)  # 3 non-linearity/ReLU activation
 
 
-    scores_l2 = np.dot(scores_l1_relu, W2)        # 4
-    scores_l2_bias = scores_l2 + b2               # 5
+    scores_l2 = np.dot(scores_l1_relu, W2)          # 4
+    scores_l2_bias = scores_l2 + b2                 # 5
     scores = scores_l2_bias # shape (5, 3)      
 
     #############################################################################
@@ -121,28 +121,32 @@ class TwoLayerNet(object):
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
 
+    # Gradient on scores:
     dscores = norm_scores
     dscores[range(N), y] -= 1
     dscores /= N
 
-    # backprop scores_l2_bias = scores_l2 + b2
-    db2 = (1) * np.sum(dscores, axis=0)
+    # Addition just propagates gradient
+    # 5 backprop scores = scores_l2 + b2
+    db2 = (1) * np.sum(dscores, axis=0) # (5,10) -> (10,)
+    dscores_l2 = (1) * dscores
 
-    # backprop scores_l2 = np.dot(scores_l1_relu, W2)
-    dscores_l1_relu = np.dot(dscores, W2.T)
-    dw2 = np.dot(scores_l1_relu.T, dscores)
+    # 4 backprop scores_l2 = np.dot(scores_l1_relu, W2)
+    dscores_l1_relu = np.dot(dscores_l2, W2.T)
+    dw2 = np.dot(scores_l1_relu.T, dscores_l2)
 
-    # backprop scores_l1_relu = np.maximum(0, scores_l1_bias)
+    # 3 backprop scores_l1_relu = np.maximum(0, scores_l1_bias)
     dscores_l1_bias = scores_l1_bias 
     dscores_l1_bias[dscores_l1_bias>0] = 1
     dscores_l1_bias[dscores_l1_bias<=0] = 0
+    dscores_l1_bias  = dscores_l1_bias * dscores_l1_relu # (5, 10)
 
-    # backprop scores_l1_bias = scores_l1 + b1
-    dscores_l1 = (1) * dscores_l1_bias * dscores_l1_relu
-    db1 = (1) * dscores_l1_bias * dscores_l1_relu # (5, 10)
+    # 2 backprop scores_l1_bias = scores_l1 + b1
+    dscores_l1 = (1) * dscores_l1_bias 
+    db1 = (1) * dscores_l1_bias 
     db1 = np.sum(db1, axis=0) # (10,)
 
-    # # backprop scores_l1 = np.dot(X, W1)
+    # 1 backprop scores_l1 = np.dot(X, W1)
     dx = np.dot(dscores_l1, W1.T)
     dw1 = np.dot(X.T, dscores_l1)
 
