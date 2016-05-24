@@ -198,7 +198,11 @@ class TwoLayerNet(object):
       # TODO: Create a random minibatch of training data and labels, storing  #
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
-      pass
+
+      mask = np.random.choice(num_train, batch_size, replace=True)
+      X_batch = X[mask]
+      y_batch = y[mask]
+
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -213,7 +217,10 @@ class TwoLayerNet(object):
       # using stochastic gradient descent. You'll need to use the gradients   #
       # stored in the grads dictionary defined above.                         #
       #########################################################################
-      pass
+
+      self.params['W1'] += -learning_rate * grads['W1']
+      self.params['W2'] += -learning_rate * grads['W2']
+
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -258,7 +265,16 @@ class TwoLayerNet(object):
     ###########################################################################
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
-    pass
+    # X : (200, 4),       200 inputs, 4 dimensions / 4 features
+    # W1 : (4, 10),       4 dimensions, 10 hidden layers
+    # layer1 : (200, 10), 200 inputs, 10 hidden layers
+    # W2 : (10, 3),       10 hidden layers, 3 classes
+    # layer2: (200, 3),   200 inputs, 3 classes
+    layer_1 = np.dot(X,self.params['W1'])
+    layer_2 = np.dot(layer_1, self.params['W2'])
+
+    # Get maximum score of each row's columns (class)
+    y_pred = np.argmax(layer_2, axis=1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################

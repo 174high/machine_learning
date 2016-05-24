@@ -97,12 +97,14 @@ class LinearClassifier(object):
     # Implement this method. Store the predicted labels in y_pred.            #
     ###########################################################################
 
-    # X = 49000 x 3073
-    # self.W = 3073 x 10
+    # X = 49000 input x 3073 dim
+    # self.W = 3073 x 10 classes
     scores = np.dot(X, self.W)
 
     # Now in 49000x10 scores, find maximum value in each column to get 
     # predicted class
+
+    # Get maximum score of each row's columns (class)
     y_pred = np.argmax(scores, axis=1)
 
     ###########################################################################
