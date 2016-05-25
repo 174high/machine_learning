@@ -220,6 +220,8 @@ class TwoLayerNet(object):
 
       self.params['W1'] += -learning_rate * grads['W1']
       self.params['W2'] += -learning_rate * grads['W2']
+      self.params['b1'] += -learning_rate * grads['b1']
+      self.params['b2'] += -learning_rate * grads['b2']
 
       #########################################################################
       #                             END OF YOUR CODE                          #
@@ -270,7 +272,8 @@ class TwoLayerNet(object):
     # layer1 : (200, 10), 200 inputs, 10 hidden layers
     # W2 : (10, 3),       10 hidden layers, 3 classes
     # layer2: (200, 3),   200 inputs, 3 classes
-    layer_1 = np.dot(X,self.params['W1'])
+    layer_1 = np.maximum(0,np.dot(X,self.params['W1']))
+    activation = np.maximum(0, layer_1)
     layer_2 = np.dot(layer_1, self.params['W2'])
 
     # Get maximum score of each row's columns (class)
