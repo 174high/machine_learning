@@ -24,10 +24,15 @@ def affine_forward(x, w, b):
   # TODO: Implement the affine forward pass. Store the result in out. You     #
   # will need to reshape the input into rows.                                 #
   #############################################################################
-  x = np.reshape(x, (x.shape[0], -1))
-  score = np.dot(x, w) + b
-  out = score
 
+  x_r = np.reshape(x, (x.shape[0], -1))
+  scores = np.dot(x_r, w) + b
+  out = scores
+
+  # place holder
+  # scores_shift -= np.max(scores)
+  # exp_scores = np.exp(scores_shift)
+  # norm_scores = (exp_scores.T/np.sum(exp_scores, axis=1)).T
 
   #############################################################################
   #                             END OF YOUR CODE                              #
@@ -56,7 +61,17 @@ def affine_backward(dout, cache):
   #############################################################################
   # TODO: Implement the affine backward pass.                                 #
   #############################################################################
-  pass
+
+  # un-roll: ex: (10, 2, 3) -> (10, 6) or (2, 4, 5, 6) -> (2, 120)
+  x_r = np.reshape(x, (x.shape[0], -1))
+
+  db = (1) * np.sum(dout, axis=0) # dscore = np.dot(x, w) + b
+  dx = np.dot(dout, w.T)          # dscore = np.dot(x, w) + b
+  dw = np.dot(x_r.T, dout)        # dscore = np.dot(x, w) + b
+
+  # re-roll the params:
+  dx = np.reshape(dx, (x.shape[0], x.shape[1], -1))
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
