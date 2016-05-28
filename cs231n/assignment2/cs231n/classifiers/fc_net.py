@@ -86,6 +86,8 @@ class TwoLayerNet(object):
     b2 = self.params['b2']
     num_train = X.shape[0]
 
+    X = np.reshape(X, (X.shape[0], -1))
+
     # (N, D) . (D, H) -> (N, H) (input, hidden dim)
     L1_scores = np.dot(X, W1) + b1
     L1 = np.maximum(0, L1_scores)
@@ -121,8 +123,8 @@ class TwoLayerNet(object):
     exp_scores = np.exp(scores)
     p = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
-    reg = (0.5 * self.reg * np.sum(W1*W1)) + (0.5 * self.reg * np.sum(W2*W2)) 
-    loss = np.sum(-np.log(p[range(num_train), y])) / num_train + reg
+    regs = (0.5 * self.reg * np.sum(W1*W1)) + (0.5 * self.reg * np.sum(W2*W2)) 
+    loss = np.sum(-np.log(p[range(num_train), y])) / num_train + regs
 
 
     dScores = p
@@ -156,8 +158,8 @@ class TwoLayerNet(object):
     dW1 = np.dot(X.T, dL1_scores)
 
 
-    grads['W1'] = dW1 + reg * W1
-    grads['W2'] = dW2 + reg * W2
+    grads['W1'] = dW1 + self.reg * W1
+    grads['W2'] = dW2 + self.reg * W2
     grads['b1'] = dB1
     grads['b2'] = dB2
 
