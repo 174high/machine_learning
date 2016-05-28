@@ -87,7 +87,8 @@ class TwoLayerNet(object):
     num_train = X.shape[0]
 
     # (N, D) . (D, H) -> (N, H) (input, hidden dim)
-    L1 = np.maximum(0, np.dot(X, W1) + b1)
+    L1_scores = np.dot(X, W1) + b1
+    L1 = np.maximum(0, L1_scores)
     scores = np.dot(L1, W2) + b2
 
     ############################################################################
@@ -123,6 +124,42 @@ class TwoLayerNet(object):
     reg = (0.5 * self.reg * np.sum(W1*W1)) + (0.5 * self.reg * np.sum(W2*W2)) 
     loss = np.sum(-np.log(p[range(num_train), y])) / num_train + reg
 
+
+    dScores = p
+    dScores[range(num_train), y] -= 1
+    dScores /= num_train
+
+    # backprop into scores = np.dot(L1, W2) + b2
+    dB2 = (1) * np.sum(dScores, axis=0)
+
+    """
+    XXX: Very important, order matters:
+    dL1 = np.dot(dScores, W2.T)
+    dW2 = np.dot(dScores.T, L1)
+    produces valid dims for dot prod, but wrong results (7, 50)
+
+    dW2 needs to be same dim as W2 dimension: (50, 7) (H, C)
+
+    """
+    dL1 = np.dot(dScores, W2.T)
+    dW2 = np.dot(L1.T, dScores)
+
+    # back prop into L1 = np.maximum(0, L1_scores)
+    dL1_scores = L1_scores
+    dL1_scores[dL1_scores>0] = 1
+    dL1_scores[dL1_scores<=0] = 0
+    dL1_scores *= dL1
+
+    # backprop into L1_scores = np.dot(X, W1) + b1
+    dB1 = (1) * np.sum(dL1_scores, axis=0)
+    dX = np.dot(dL1_scores, W1.T)
+    dW1 = np.dot(X.T, dL1_scores)
+
+
+    grads['W1'] = dW1 + reg * W1
+    grads['W2'] = dW2 + reg * W2
+    grads['b1'] = dB1
+    grads['b2'] = dB2
 
     ############################################################################
     #                             END OF YOUR CODE                             #
