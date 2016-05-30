@@ -306,7 +306,13 @@ class FullyConnectedNet(object):
     # layer, etc.                                                              #
     ############################################################################
 
+    # Unroll input dimenions
+    # ex (25,3,32,32) -> (25, 3072)
+    X = np.reshape(X, (X.shape[0], -1)) 
     num_train = X.shape[0]
+    cache = {}  # storing our computations for ease of use in backprop
+                # originally used self.params, but reserve this only for
+                # Wi and bi.  Interferes with automated checks
     for layer_i in range(self.num_layers)[1:]:
         Wi = "W{i}".format(i=layer_i)
         bi = "b{i}".format(i=layer_i)
@@ -322,38 +328,14 @@ class FullyConnectedNet(object):
         else:
             scores = np.dot(scores, _W) + _b
 
-        self.params[Li_s] = scores
+        cache[Li_s] = scores
 
         # Apply ReLU only to non-output layers
         if layer_i < self.num_layers-1:
             # print "Applying ReLU on layer {l}".format(l=layer_i)
             scores = np.maximum(0, scores)
-            self.params[Li] = scores
+            cache[Li] = scores
 
-    # L1_scores = np.dot(X, self.params['W1']) + self.params['b1']
-    # L1 = np.maximum(0, L1_scores)
-    # self.params['L1_s'] = L1_scores
-    # self.params['L1'] = L1
-    # scores = L1
-
-    # last_layer_i = self.num_layers-2
-    # for layer_i in range(self.num_layers-2):
-    #     Wi = "W{i}".format(i=layer_i+2)
-    #     bi = "b{i}".format(i=layer_i+2)
-    #     Li = "L{i}".format(i=layer_i+2)
-    #     Li_s = "L{i}_s".format(i=layer_i+2)
-
-    #     _W = self.params[Wi]
-    #     _b = self.params[bi]
-    #     scores = np.dot(scores, _W) + _b
-    #     if layer_i != last_layer_i:
-    #         # print "Applying ReLU on layer {l}".format(l=layer_i)
-    #         self.params[Li_s] = scores
-    #         scores = np.maximum(0, scores)
-    #         self.params[Li] = scores
-
-    # L1 = np.maximum(0, L1_scores)
-    # scores = np.dot(L1, W2) + b2
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -402,10 +384,9 @@ class FullyConnectedNet(object):
         Li_s = "L{i}_s".format(i=layer_i-1) if layer_i > 1 else "X"
         bi = "b{i}".format(i=layer_i)
 
-        # print Wi,Li,bi
         # backprop into scores = np.dot(L1, W2) + b2
         W = self.params[Wi]
-        L = self.params[Li] if layer_i > 1 else X
+        L = cache[Li] if layer_i > 1 else X
 
         db = (1) * np.sum(dScores, axis=0)
         dL = np.dot(dScores, W.T)
@@ -416,7 +397,7 @@ class FullyConnectedNet(object):
         # back prop into ReLU L1 = np.maximum(0, L1_scores)
         # only applied on hidden layers:
         if layer_i > 1: 
-            dL_scores = self.params[Li_s]
+            dL_scores = cache[Li_s]
             dL_scores[dL_scores>0] = 1
             dL_scores[dL_scores<=0] = 0
             dL_scores *= dL
