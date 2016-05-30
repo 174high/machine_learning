@@ -228,7 +228,26 @@ class FullyConnectedNet(object):
     # beta2, etc. Scale parameters should be initialized to one and shift      #
     # parameters should be initialized to zero.                                #
     ############################################################################
-    pass
+
+    for layer_i in range(self.num_layers-1):
+        Wi = "W{i}".format(i=layer_i+1)
+        bi = "b{i}".format(i=layer_i+1)
+        if layer_i == 0:
+            self.params[Wi] = weight_scale * np.random.randn(input_dim, hidden_dims[layer_i])
+            self.params[bi] = np.zeros(hidden_dims[layer_i])
+        else:
+            self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i-1], hidden_dims[layer_i])
+            self.params[bi] = np.zeros(hidden_dims[layer_i])
+
+    # old way:
+    # self.params['W1'] = weight_scale * (np.random.randn(input_dim, hidden_dims[0]))
+    # self.params['b1'] = np.zeros(hidden_dims[0])
+    # for layer_i in range(self.num_layers-2):
+    #     Wi = "W{i}".format(i=layer_i+2)
+    #     bi = "b{i}".format(i=layer_i+2)
+    #     self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i], hidden_dims[layer_i+1])
+    #     self.params[bi] = np.zeros(hidden_dims[layer_i+1])
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -286,7 +305,56 @@ class FullyConnectedNet(object):
     # self.bn_params[1] to the forward pass for the second batch normalization #
     # layer, etc.                                                              #
     ############################################################################
-    pass
+
+    num_train = X.shape[0]
+    for layer_i in range(self.num_layers)[1:]:
+        Wi = "W{i}".format(i=layer_i)
+        bi = "b{i}".format(i=layer_i)
+        Li = "L{i}".format(i=layer_i)
+        Li_s = "L{i}_s".format(i=layer_i)
+
+        _W = self.params[Wi]
+        _b = self.params[bi]
+
+        # first layer, input X
+        if layer_i == 1: 
+            scores = np.dot(X, _W) + _b
+        else:
+            scores = np.dot(scores, _W) + _b
+
+        self.params[Li_s] = scores
+
+        # Apply ReLU only to non-output layers
+        if layer_i < self.num_layers-1:
+            # print "Applying ReLU on layer {l}".format(l=layer_i)
+            scores = np.maximum(0, scores)
+            self.params[Li] = scores
+
+    # L1_scores = np.dot(X, self.params['W1']) + self.params['b1']
+    # L1 = np.maximum(0, L1_scores)
+    # self.params['L1_s'] = L1_scores
+    # self.params['L1'] = L1
+    # scores = L1
+
+    # last_layer_i = self.num_layers-2
+    # for layer_i in range(self.num_layers-2):
+    #     Wi = "W{i}".format(i=layer_i+2)
+    #     bi = "b{i}".format(i=layer_i+2)
+    #     Li = "L{i}".format(i=layer_i+2)
+    #     Li_s = "L{i}_s".format(i=layer_i+2)
+
+    #     _W = self.params[Wi]
+    #     _b = self.params[bi]
+    #     scores = np.dot(scores, _W) + _b
+    #     if layer_i != last_layer_i:
+    #         # print "Applying ReLU on layer {l}".format(l=layer_i)
+    #         self.params[Li_s] = scores
+    #         scores = np.maximum(0, scores)
+    #         self.params[Li] = scores
+
+    # L1 = np.maximum(0, L1_scores)
+    # scores = np.dot(L1, W2) + b2
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -309,7 +377,51 @@ class FullyConnectedNet(object):
     # automated tests, make sure that your L2 regularization includes a factor #
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
-    pass
+
+    scores -= np.max(scores)
+    exp_scores = np.exp(scores)
+    p = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    regs = 0
+
+    # Compute regularization:
+    for layer_i in range(self.num_layers-1):
+        Wi = "W{i}".format(i=layer_i+1)
+        _W = self.params[Wi]
+        regs += (0.5 * self.reg * np.sum(_W*_W))
+
+    loss = np.sum(-np.log(p[range(num_train), y])) / num_train + regs
+
+
+    dScores = p
+    dScores[range(num_train), y] -= 1
+    dScores /= num_train
+
+    for layer_i in range(self.num_layers-1,0,-1):
+        Wi = "W{i}".format(i=layer_i)
+        Li = "L{i}".format(i=layer_i-1) if layer_i > 1 else "X"
+        Li_s = "L{i}_s".format(i=layer_i-1) if layer_i > 1 else "X"
+        bi = "b{i}".format(i=layer_i)
+
+        # print Wi,Li,bi
+        # backprop into scores = np.dot(L1, W2) + b2
+        W = self.params[Wi]
+        L = self.params[Li] if layer_i > 1 else X
+
+        db = (1) * np.sum(dScores, axis=0)
+        dL = np.dot(dScores, W.T)
+        dW = np.dot(L.T, dScores)
+        grads[bi] = db 
+        grads[Wi] = dW + self.reg * W
+
+        # back prop into ReLU L1 = np.maximum(0, L1_scores)
+        # only applied on hidden layers:
+        if layer_i > 1: 
+            dL_scores = self.params[Li_s]
+            dL_scores[dL_scores>0] = 1
+            dL_scores[dL_scores<=0] = 0
+            dL_scores *= dL
+            dScores = dL_scores
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
