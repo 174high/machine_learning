@@ -194,34 +194,34 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     cache = {}
     
     # avg = 1/N * np.sum(x, axis=0, keepdims=True)
-    # 1
+    # 1 (1, D)
     avg = 1/float(N) * np.sum(x, axis=0, keepdims=True)
 
-    # 2
-    var_1 = (x - avg)**2
-
-    # 3
-    var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
-
-    # 4
+    # 2 (N, D)
     norm_1 = (x - avg)
 
-    # 5
+    # 3 (N, D)
+    var_1 = (norm_1)**2
+
+    # 4  (1,D)
+    var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
+
+    # 5 (1, D)
     norm_2 = np.sqrt(var_2 + eps)
 
-    # 6
+    # 6 (1, D)
     norm_3 = 1.0 / norm_2
 
-    # 7
+    # 7 (N, D)
     norm_4 = norm_1 * norm_3  # (x - avg) * 1/np.sqrt(var + eps)
 
-    # 8
+    # 8 (N, D)
     out = gamma*norm_4 + beta
 
     running_mean = momentum * running_mean + (1-momentum) * avg
     running_var = momentum * running_var + (1-momentum) * var_2
 
-    cache = (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N)
+    cache = (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N, eps)
 
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -275,44 +275,42 @@ def batchnorm_backward(dout, cache):
   
   # (norm, gamma, beta, ub, svar, norm_num, norm_den) = cache 
 
-  (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N) = cache
-
-
+  (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N, eps) = cache
 
   # 8 backprop into out = gamma*norm_4 + beta
   #   gamma = (5,0); norm * dout = (4,5), sum rows to get grads (5,)
   dgamma = np.sum(norm_4 * dout, axis=0)
-  dnorm_4 = np.sum(gamma * dout, axis=0)
   dbeta = (1) * np.sum(dout, axis=0)
 
+  dnorm_4 = gamma * dout
+  
   # 7 backprop into  norm_4 = norm_1 * norm_3 
   dnorm_1 = norm_3 * dnorm_4
-  dnorm_3 = norm_1 * dnorm_4
+
+  # important to sum!  norm_3 is (1, D), so we want (D,)
+  dnorm_3 = np.sum(norm_1 * dnorm_4, axis=0) 
 
   # 6 norm_3 = 1.0 / norm_2
-  dnorm_2 = ((-1.0) / (norm_2**2)) * dnorm_3
+  dnorm_2 = ( (-1.0) / (norm_2**2)) * dnorm_3
 
   # 5 norm_2 = np.sqrt(var_2 + eps)
-  dvar_2 = ((-1.0) / (( 2 * (var_2 + 1))**(3.0/2.0)) ) * dnorm_2
+  dvar_2 = 0.5 * (var_2 + eps)**(-0.5) * dnorm_2
 
-  # 4 norm_1 = (x - avg)
-  dx_1 = np.sum(dnorm_1, axis=0)
-  print dx_1.shape
+  # 4 var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
+  dvar_1 =  1/float(N) * np.ones((var_1.shape)) * dvar_2 
 
-  # 3 var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
-  dvar_1 =  np.sum(var_1) * 1/float(N) * dvar_2 # XXX: check
+  # 3 var_1 = (norm_1)**2
+  # have dnorm_1 already, so we accumulate the grads
+  dnorm_1 += 2 * norm_1 * dvar_1
 
-
-  # 2 var_1 = (x - avg)**2
-  dx_2 = np.sum(2 * (x-avg) * dvar_1, axis=0)
-  print dx_2.shape
+  # 2 norm_1 = (x - avg)
+  dx_1 = dnorm_1
+  davg = -1 * np.sum(dnorm_1, axis=0) # note: account for minus
 
   # 1 avg = 1/float(N) * np.sum(x, axis=0, keepdims=True)    
-  dx_3 = x.shape[0] * 1/float(N) # XXX
+  dx_2 = 1/float(N) * np.ones((dnorm_1.shape)) * davg 
 
-  dx = dx_1 + dx_2 + dx_3
-
-
+  dx = dx_1 + dx_2
 
   #############################################################################
   #                             END OF YOUR CODE                              #
