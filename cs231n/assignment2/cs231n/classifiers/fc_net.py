@@ -232,6 +232,7 @@ class FullyConnectedNet(object):
     for layer_i in range(self.num_layers-1):
         Wi = "W{i}".format(i=layer_i+1)
         bi = "b{i}".format(i=layer_i+1)
+
         if layer_i == 0:
             self.params[Wi] = weight_scale * np.random.randn(input_dim, hidden_dims[layer_i])
             self.params[bi] = np.zeros(hidden_dims[layer_i])
@@ -239,14 +240,13 @@ class FullyConnectedNet(object):
             self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i-1], hidden_dims[layer_i])
             self.params[bi] = np.zeros(hidden_dims[layer_i])
 
-    # old way:
-    # self.params['W1'] = weight_scale * (np.random.randn(input_dim, hidden_dims[0]))
-    # self.params['b1'] = np.zeros(hidden_dims[0])
-    # for layer_i in range(self.num_layers-2):
-    #     Wi = "W{i}".format(i=layer_i+2)
-    #     bi = "b{i}".format(i=layer_i+2)
-    #     self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i], hidden_dims[layer_i+1])
-    #     self.params[bi] = np.zeros(hidden_dims[layer_i+1])
+    if self.use_batchnorm:
+        for layer_i in range(self.num_layers-2):
+            gi = "gamma{i}".format(i=layer_i+1)
+            bi = "beta{i}".format(i=layer_i+1)
+            self.params[gi] = np.ones(hidden_dims[layer_i])
+            self.params[bi] = np.zeros(hidden_dims[layer_i])
+
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -268,7 +268,14 @@ class FullyConnectedNet(object):
     # pass of the second batch normalization layer, etc.
     self.bn_params = []
     if self.use_batchnorm:
+      # self.bn_params = [{'mode': 'train',
+      #                   'running_mean': np.zeros(self.num_layers),
+      #                   'running_var': np.zeros(self.num_layers)} for i in xrange(self.num_layers-1)]
       self.bn_params = [{'mode': 'train'} for i in xrange(self.num_layers - 1)]
+
+    # for layer_i in range(self.num_layers-2):
+    #     self.bn_params[layer_i]['running_mean'] = np.zeros(hidden_dims[layer_i])
+    #     self.bn_params[layer_i]['running_var'] = np.zeros(hidden_dims[layer_i])
     
     # Cast all parameters to the correct datatype
     for k, v in self.params.iteritems():
@@ -313,6 +320,7 @@ class FullyConnectedNet(object):
     cache = {}  # storing our computations for ease of use in backprop
                 # originally used self.params, but reserve this only for
                 # Wi and bi.  Interferes with automated checks
+
     for layer_i in range(self.num_layers)[1:]:
         Wi = "W{i}".format(i=layer_i)
         bi = "b{i}".format(i=layer_i)
@@ -333,6 +341,14 @@ class FullyConnectedNet(object):
         # Apply ReLU only to non-output layers
         if layer_i < self.num_layers-1:
             # print "Applying ReLU on layer {l}".format(l=layer_i)
+            # print self.params['gamma1']
+            if self.use_batchnorm:
+                gi = "gamma{i}".format(i=layer_i)
+                bi = "beta{i}".format(i=layer_i)
+                gamma = self.params[gi]
+                beta = self.params[bi]
+                scores,_= batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i-1])
+
             scores = np.maximum(0, scores)
             cache[Li] = scores
 
@@ -403,8 +419,16 @@ class FullyConnectedNet(object):
             dL_scores *= dL
             dScores = dL_scores
 
+            if self.use_batchnorm:
+                pass
+                # print "do batchnorm backprop"
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
 
     return loss, grads
+
+
+# def affine_fwd_batchnorm_fwd(scores,gamma,beta,params):
+#     affine_forward(scores, )
