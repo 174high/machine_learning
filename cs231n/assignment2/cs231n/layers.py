@@ -192,23 +192,36 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     # storing your result in the running_mean and running_var variables.        #
     #############################################################################
     cache = {}
+    
+    # avg = 1/N * np.sum(x, axis=0, keepdims=True)
     # 1
-    # ub = 1/N * np.sum(x, axis=0, keepdims=True)
-    ub = np.mean(x, axis=0, keepdims=True)
-    svar = np.var(x, axis=0, keepdims=True)
+    avg = 1/float(N) * np.sum(x, axis=0, keepdims=True)
 
+    # 2
+    var_1 = (x - avg)**2
 
-    norm_num = (x - ub)
-    norm_den = 1/np.sqrt(svar + eps)
-    norm = norm_num / norm_den  # (x - ub) * 1/np.sqrt(svar + eps)
+    # 3
+    var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
 
+    # 4
+    norm_1 = (x - avg)
 
-    out = gamma*norm + beta
+    # 5
+    norm_2 = np.sqrt(var_2 + eps)
 
-    running_mean = momentum * running_mean + (1-momentum) * ub
-    running_var = momentum * running_var + (1-momentum) * svar
+    # 6
+    norm_3 = 1.0 / norm_2
 
-    cache = (norm, gamma, beta, ub, svar, norm_num, norm_den)
+    # 7
+    norm_4 = norm_1 * norm_3  # (x - avg) * 1/np.sqrt(var + eps)
+
+    # 8
+    out = gamma*norm_4 + beta
+
+    running_mean = momentum * running_mean + (1-momentum) * avg
+    running_var = momentum * running_var + (1-momentum) * var_2
+
+    cache = (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N)
 
     #############################################################################
     #                             END OF YOUR CODE                              #
@@ -260,23 +273,45 @@ def batchnorm_backward(dout, cache):
   # results in the dx, dgamma, and dbeta variables.                           #
   #############################################################################
   
-  (norm, gamma, beta, ub, svar, norm_num, norm_den) = cache 
+  # (norm, gamma, beta, ub, svar, norm_num, norm_den) = cache 
+
+  (gamma, beta, avg, norm_4, norm_3, norm_2, norm_1, var_2, var_1, x, N) = cache
 
 
-  # backprop into out = gamma*norm + beta
-  
-  # gamma = (5,0)
-  # norm * dout = (4,5), sum for grads
-  # print (norm * dout).shape
-  dgamma = np.sum(norm * dout, axis=0)
-  # print dgamma.shape
-  dnorm = np.sum(gamma * dout, axis=0)
+
+  # 8 backprop into out = gamma*norm_4 + beta
+  #   gamma = (5,0); norm * dout = (4,5), sum rows to get grads (5,)
+  dgamma = np.sum(norm_4 * dout, axis=0)
+  dnorm_4 = np.sum(gamma * dout, axis=0)
   dbeta = (1) * np.sum(dout, axis=0)
 
-  # backprop into norm = (x - ub)/np.sqrt(svar + eps)
-  # print x.shape
-  dx = norm_den * dnorm
-  print dx.shape
+  # 7 backprop into  norm_4 = norm_1 * norm_3 
+  dnorm_1 = norm_3 * dnorm_4
+  dnorm_3 = norm_1 * dnorm_4
+
+  # 6 norm_3 = 1.0 / norm_2
+  dnorm_2 = ((-1.0) / (norm_2**2)) * dnorm_3
+
+  # 5 norm_2 = np.sqrt(var_2 + eps)
+  dvar_2 = ((-1.0) / (( 2 * (var_2 + 1))**(3.0/2.0)) ) * dnorm_2
+
+  # 4 norm_1 = (x - avg)
+  dx_1 = np.sum(dnorm_1, axis=0)
+  print dx_1.shape
+
+  # 3 var_2 = 1/float(N) * np.sum(var_1, axis=0, keepdims=True)
+  dvar_1 =  np.sum(var_1) * 1/float(N) * dvar_2 # XXX: check
+
+
+  # 2 var_1 = (x - avg)**2
+  dx_2 = np.sum(2 * (x-avg) * dvar_1, axis=0)
+  print dx_2.shape
+
+  # 1 avg = 1/float(N) * np.sum(x, axis=0, keepdims=True)    
+  dx_3 = x.shape[0] * 1/float(N) # XXX
+
+  dx = dx_1 + dx_2 + dx_3
+
 
 
   #############################################################################
