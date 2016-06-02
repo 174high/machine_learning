@@ -70,7 +70,9 @@ def affine_backward(dout, cache):
   dw = np.dot(x_r.T, dout)        # dscore = np.dot(x, w) + b
 
   # re-roll the params:
-  dx = np.reshape(dx, (x.shape[0], x.shape[1], -1))
+  # dx = np.reshape(dx, (x.shape[0], x.shape[1], -1))
+  dx = np.reshape(dx, x.shape)
+
 
   #############################################################################
   #                             END OF YOUR CODE                              #
@@ -650,4 +652,5 @@ def softmax_loss(x, y):
   dx = probs.copy()
   dx[np.arange(N), y] -= 1
   dx /= N
+
   return loss, dx
