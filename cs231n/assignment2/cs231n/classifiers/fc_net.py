@@ -321,27 +321,23 @@ class FullyConnectedNet(object):
     for layer_i in range(self.num_layers)[1:]:
         Wi = "W{i}".format(i=layer_i)
         bi = "b{i}".format(i=layer_i)
-        Ai = "A{i}".format(i=layer_i)   # Affine cache
-        Ri = "R{i}".format(i=layer_i)   # ReLU cache
-        # batchnorm:
-        BNi = "BN{i}".format(i=layer_i)
-        BNCi = "BNC{i}".format(i=layer_i)
+        Ai = "A{i}".format(i=layer_i)       # Affine cache
+        Ri = "R{i}".format(i=layer_i)       # ReLU cache
+        BNCi = "BNC{i}".format(i=layer_i)   # BatchNorm cache
 
         _W = self.params[Wi]
         _b = self.params[bi]
 
-        # first layer, input X
+        # First layer, input X
         if layer_i == 1: 
             scores, a_cache = affine_forward(X, _W, _b)
         else:
             scores, a_cache = affine_forward(scores, _W, _b)
 
         cache[Ai] = a_cache
-        # cache[Li_s] = scores
 
-        # Apply ReLU only to non-output layers
+        # Apply ReLU & Batchnorm only to non-output layers
         if layer_i < self.num_layers-1:
-            # print "Applying ReLU on layer {l}".format(l=layer_i)
             if self.use_batchnorm:
                 gi = "gamma{i}".format(i=layer_i)
                 bi = "beta{i}".format(i=layer_i)
@@ -353,8 +349,6 @@ class FullyConnectedNet(object):
 
             scores, r_cache = relu_forward(scores)
             cache[Ri] = r_cache
-            # scores = np.maximum(0, scores)
-            # cache[Li] = scores
 
 
     ############################################################################
