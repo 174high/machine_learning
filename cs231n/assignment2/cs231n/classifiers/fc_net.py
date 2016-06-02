@@ -389,8 +389,9 @@ class FullyConnectedNet(object):
         bi = "b{i}".format(i=layer_i)   # bias gradient
         Ai = "A{i}".format(i=layer_i)   # Affine cache
         Ri = "R{i}".format(i=layer_i)   # ReLU cache
-        gammai = "gamma{i}".format(i=layer_i)
-        betai = "beta{i}".format(i=layer_i)
+
+        gammai = "gamma{i}".format(i=layer_i)   # gamma gradient
+        betai = "beta{i}".format(i=layer_i)     # beta gradient
 
         # batchnorm:
         # BNi = "BN{i}".format(i=layer_i)
@@ -423,6 +424,3 @@ class FullyConnectedNet(object):
 
     return loss, grads
 
-
-# def affine_fwd_batchnorm_fwd(scores,gamma,beta,params):
-#     affine_forward(scores, )
