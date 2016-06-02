@@ -232,6 +232,7 @@ class FullyConnectedNet(object):
     for layer_i in range(self.num_layers-1):
         Wi = "W{i}".format(i=layer_i+1)
         bi = "b{i}".format(i=layer_i+1)
+
         if layer_i == 0:
             self.params[Wi] = weight_scale * np.random.randn(input_dim, hidden_dims[layer_i])
             self.params[bi] = np.zeros(hidden_dims[layer_i])
@@ -239,14 +240,13 @@ class FullyConnectedNet(object):
             self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i-1], hidden_dims[layer_i])
             self.params[bi] = np.zeros(hidden_dims[layer_i])
 
-    # old way:
-    # self.params['W1'] = weight_scale * (np.random.randn(input_dim, hidden_dims[0]))
-    # self.params['b1'] = np.zeros(hidden_dims[0])
-    # for layer_i in range(self.num_layers-2):
-    #     Wi = "W{i}".format(i=layer_i+2)
-    #     bi = "b{i}".format(i=layer_i+2)
-    #     self.params[Wi] = weight_scale * np.random.randn(hidden_dims[layer_i], hidden_dims[layer_i+1])
-    #     self.params[bi] = np.zeros(hidden_dims[layer_i+1])
+    if self.use_batchnorm:
+        for layer_i in range(self.num_layers-2):
+            gi = "gamma{i}".format(i=layer_i+1)
+            bi = "beta{i}".format(i=layer_i+1)
+            self.params[gi] = np.ones(hidden_dims[layer_i])
+            self.params[bi] = np.zeros(hidden_dims[layer_i])
+
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -269,6 +269,10 @@ class FullyConnectedNet(object):
     self.bn_params = []
     if self.use_batchnorm:
       self.bn_params = [{'mode': 'train'} for i in xrange(self.num_layers - 1)]
+
+    # for layer_i in range(self.num_layers-2):
+    #     self.bn_params[layer_i]['running_mean'] = np.zeros(hidden_dims[layer_i])
+    #     self.bn_params[layer_i]['running_var'] = np.zeros(hidden_dims[layer_i])
     
     # Cast all parameters to the correct datatype
     for k, v in self.params.iteritems():
@@ -313,28 +317,38 @@ class FullyConnectedNet(object):
     cache = {}  # storing our computations for ease of use in backprop
                 # originally used self.params, but reserve this only for
                 # Wi and bi.  Interferes with automated checks
+
     for layer_i in range(self.num_layers)[1:]:
         Wi = "W{i}".format(i=layer_i)
         bi = "b{i}".format(i=layer_i)
-        Li = "L{i}".format(i=layer_i)
-        Li_s = "L{i}_s".format(i=layer_i)
+        Ai = "A{i}".format(i=layer_i)       # Affine cache
+        Ri = "R{i}".format(i=layer_i)       # ReLU cache
+        BNCi = "BNC{i}".format(i=layer_i)   # BatchNorm cache
 
         _W = self.params[Wi]
         _b = self.params[bi]
 
-        # first layer, input X
+        # First layer, input X
         if layer_i == 1: 
-            scores = np.dot(X, _W) + _b
+            scores, a_cache = affine_forward(X, _W, _b)
         else:
-            scores = np.dot(scores, _W) + _b
+            scores, a_cache = affine_forward(scores, _W, _b)
 
-        cache[Li_s] = scores
+        cache[Ai] = a_cache
 
-        # Apply ReLU only to non-output layers
+        # Apply ReLU & Batchnorm only to non-output layers
         if layer_i < self.num_layers-1:
-            # print "Applying ReLU on layer {l}".format(l=layer_i)
-            scores = np.maximum(0, scores)
-            cache[Li] = scores
+            if self.use_batchnorm:
+                gi = "gamma{i}".format(i=layer_i)
+                bi = "beta{i}".format(i=layer_i)
+                gamma = self.params[gi]
+                beta = self.params[bi]
+                scores, bn_cache = batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i-1])
+                # cache[BNi] = scores
+                cache[BNCi] = bn_cache
+
+            scores, r_cache = relu_forward(scores)
+            cache[Ri] = r_cache
 
 
     ############################################################################
@@ -360,51 +374,55 @@ class FullyConnectedNet(object):
     # of 0.5 to simplify the expression for the gradient.                      #
     ############################################################################
 
-    scores -= np.max(scores)
-    exp_scores = np.exp(scores)
-    p = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
-    regs = 0
-
     # Compute regularization:
+    regs = 0
     for layer_i in range(self.num_layers-1):
         Wi = "W{i}".format(i=layer_i+1)
         _W = self.params[Wi]
         regs += (0.5 * self.reg * np.sum(_W*_W))
 
-    loss = np.sum(-np.log(p[range(num_train), y])) / num_train + regs
-
-
-    dScores = p
-    dScores[range(num_train), y] -= 1
-    dScores /= num_train
+    loss, dScores = softmax_loss(scores, y)
+    loss += regs
 
     for layer_i in range(self.num_layers-1,0,-1):
-        Wi = "W{i}".format(i=layer_i)
-        Li = "L{i}".format(i=layer_i-1) if layer_i > 1 else "X"
-        Li_s = "L{i}_s".format(i=layer_i-1) if layer_i > 1 else "X"
-        bi = "b{i}".format(i=layer_i)
+        Wi = "W{i}".format(i=layer_i)   # W gradient
+        bi = "b{i}".format(i=layer_i)   # bias gradient
+        Ai = "A{i}".format(i=layer_i)   # Affine cache
+        Ri = "R{i}".format(i=layer_i)   # ReLU cache
+        gammai = "gamma{i}".format(i=layer_i)
+        betai = "beta{i}".format(i=layer_i)
 
-        # backprop into scores = np.dot(L1, W2) + b2
-        W = self.params[Wi]
-        L = cache[Li] if layer_i > 1 else X
-
-        db = (1) * np.sum(dScores, axis=0)
-        dL = np.dot(dScores, W.T)
-        dW = np.dot(L.T, dScores)
-        grads[bi] = db 
-        grads[Wi] = dW + self.reg * W
+        # batchnorm:
+        # BNi = "BN{i}".format(i=layer_i)
+        BNCi = "BNC{i}".format(i=layer_i)
 
         # back prop into ReLU L1 = np.maximum(0, L1_scores)
         # only applied on hidden layers:
-        if layer_i > 1: 
-            dL_scores = cache[Li_s]
-            dL_scores[dL_scores>0] = 1
-            dL_scores[dL_scores<=0] = 0
-            dL_scores *= dL
-            dScores = dL_scores
+        # print str(layer_i)  + "," + str(self.num_layers-1)
+        if layer_i < self.num_layers-1: 
+            r_cache = cache[Ri]
+            dScores = relu_backward(dScores, r_cache)
+
+            if self.use_batchnorm:
+                bn_cache = cache[BNCi]
+                dScores, dgamma, dbeta = batchnorm_backward(dScores, bn_cache)
+                
+                grads[gammai] = dgamma
+                grads[betai] = dbeta
+
+
+        a_cache = cache[Ai]
+        _,W,_ = a_cache
+        dScores,dW,db = affine_backward(dScores, a_cache)
+        grads[bi] = db
+        grads[Wi] = dW + self.reg * W
 
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
 
     return loss, grads
+
+
+# def affine_fwd_batchnorm_fwd(scores,gamma,beta,params):
+#     affine_forward(scores, )
