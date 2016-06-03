@@ -269,10 +269,6 @@ class FullyConnectedNet(object):
     self.bn_params = []
     if self.use_batchnorm:
       self.bn_params = [{'mode': 'train'} for i in xrange(self.num_layers - 1)]
-
-    # for layer_i in range(self.num_layers-2):
-    #     self.bn_params[layer_i]['running_mean'] = np.zeros(hidden_dims[layer_i])
-    #     self.bn_params[layer_i]['running_var'] = np.zeros(hidden_dims[layer_i])
     
     # Cast all parameters to the correct datatype
     for k, v in self.params.iteritems():
@@ -323,7 +319,8 @@ class FullyConnectedNet(object):
         bi = "b{i}".format(i=layer_i)
         Ai = "A{i}".format(i=layer_i)       # Affine cache
         Ri = "R{i}".format(i=layer_i)       # ReLU cache
-        BNCi = "BNC{i}".format(i=layer_i)   # BatchNorm cache
+        BNi = "BN{i}".format(i=layer_i)   # BatchNorm cache
+        Di = "D{i}".format(i=layer_i)       # Dropout cache
 
         _W = self.params[Wi]
         _b = self.params[bi]
@@ -344,11 +341,13 @@ class FullyConnectedNet(object):
                 gamma = self.params[gi]
                 beta = self.params[bi]
                 scores, bn_cache = batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i-1])
-                # cache[BNi] = scores
-                cache[BNCi] = bn_cache
+                cache[BNi] = bn_cache
 
             scores, r_cache = relu_forward(scores)
             cache[Ri] = r_cache
+
+            if self.use_dropout:
+                scores, cache[Di] = dropout_forward(scores, self.dropout_param)
 
 
     ############################################################################
@@ -384,28 +383,36 @@ class FullyConnectedNet(object):
     loss, dScores = softmax_loss(scores, y)
     loss += regs
 
+
+    """
+    
+    Order for backprop:
+    softmax - affine - { [dropout] - relu - [batch norm] - affine } x (L-1)
+
+    """
     for layer_i in range(self.num_layers-1,0,-1):
-        Wi = "W{i}".format(i=layer_i)   # W gradient
-        bi = "b{i}".format(i=layer_i)   # bias gradient
-        Ai = "A{i}".format(i=layer_i)   # Affine cache
-        Ri = "R{i}".format(i=layer_i)   # ReLU cache
+        Wi = "W{i}".format(i=layer_i)       # W gradient
+        bi = "b{i}".format(i=layer_i)       # bias gradient
+        Ai = "A{i}".format(i=layer_i)       # Affine cache
+        Ri = "R{i}".format(i=layer_i)       # ReLU cache
+        BNi = "BNC{i}".format(i=layer_i)    # Batchnorm cache
+        Di = "D{i}".format(i=layer_i)       # Dropout cache
 
         gammai = "gamma{i}".format(i=layer_i)   # gamma gradient
         betai = "beta{i}".format(i=layer_i)     # beta gradient
-
-        # batchnorm:
-        # BNi = "BN{i}".format(i=layer_i)
-        BNCi = "BNC{i}".format(i=layer_i)
-
-        # back prop into ReLU L1 = np.maximum(0, L1_scores)
+        
+        # backprop into ReLU L1 = np.maximum(0, L1_scores)
         # only applied on hidden layers:
         # print str(layer_i)  + "," + str(self.num_layers-1)
         if layer_i < self.num_layers-1: 
+            if self.use_dropout:
+                dScores = dropout_backward(dScores, cache[Di])
+
             r_cache = cache[Ri]
             dScores = relu_backward(dScores, r_cache)
 
             if self.use_batchnorm:
-                bn_cache = cache[BNCi]
+                bn_cache = cache[BNi]
                 dScores, dgamma, dbeta = batchnorm_backward(dScores, bn_cache)
                 
                 grads[gammai] = dgamma
