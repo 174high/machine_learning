@@ -462,7 +462,53 @@ def conv_forward_naive(x, w, b, conv_param):
   # TODO: Implement the convolutional forward pass.                           #
   # Hint: you can use the function np.pad for padding.                        #
   #############################################################################
-  pass
+  S = conv_param['stride']
+  P = conv_param['pad']
+  
+  N, C_x, H_x, W_x = x.shape
+  F, C_w, HH_w, WW_w = w.shape
+
+  # Pad AFTER sampling shape, otherwise calculating the output W, H 
+  # wont be accurate
+  npad = ((0,0), (0,0), (1,1), (1,1))
+  x = np.pad(x,pad_width=npad,mode='constant')
+
+  locations = 1 + (W_x + 2*P - WW_w)/S #(W_x - WW_w + 2*P)/float(S) + 1
+
+  H_out = 1 + (H_x + 2*P - HH_w)/S
+  W_out = 1 + (W_x + 2*P - WW_w)/S
+  print locations
+  V_shape = (locations, F, H_out, W_out)
+  # print V_shape
+  V = np.zeros(V_shape)
+
+
+  # Add loop through filters here
+  """
+  xxxx--    --xxxx     ------    ------
+  xxxx--    --xxxx     ------    ------
+  xxxx-- -> --xxxx  -> xxxx-- -> --xxxx
+  xxxx--    --xxxx     xxxx--    --xxxx
+  ------    ------     xxxx--    --xxxx
+  ------    ------     xxxx--    --xxxx
+
+  2 steps width, 2 steps height, dot product each time.
+  Repeat the above 
+  """
+  for f in range(F):            # loop through filters
+    for n in range(N):          # loop through x inputs
+      for i in range(H_out):    # loop/step through height
+        for j in range(W_out):  # loop/step through width
+          # walk horizontal, then vertical
+          # calculate the convolution dimensions (the x's in above diagram)
+          ws = j*S        # width start
+          we = WW_w+S*j   # width end
+          hs = i*S        # height start
+          he = WW_w+S*i   # height end
+          # output of dim (N, F, H', W')
+          V[n, f, i, j] = np.sum(x[n, :, hs:he, ws:we] * w[f]) + b[f]
+
+  out = V 
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
