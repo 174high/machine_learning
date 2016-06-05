@@ -120,7 +120,7 @@ def relu_backward(dout, cache):
   #############################################################################
   # TODO: Implement the ReLU backward pass.                                   #
   #############################################################################
-  
+  #XXX: todo: initialize dx = np.zeros(x.shape), retest
   dx = x  
   dx[dx>0] = 1
   dx[dx<=0] = 0
@@ -547,7 +547,6 @@ def conv_backward_naive(dout, cache):
   dw = np.zeros(w.shape)
   db = np.zeros(b.shape)
 
-  # print x.shape
   npad = ((0,0), (0,0), (1,1), (1,1))
   dx = np.pad(dx, pad_width=npad, mode='constant')
   x_pad = np.pad(x, pad_width=npad, mode='constant')
@@ -617,7 +616,7 @@ def max_pool_forward_naive(x, pool_param):
 
   V_shape = (N, C_x, H_out, W_out)
   V = np.zeros(V_shape)
-  print V_shape
+  # print V_shape
 
   for n in range(N):          # loop through x inputs
     for i in range(H_out):    # loop/step through height
@@ -654,7 +653,37 @@ def max_pool_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the max pooling backward pass                             #
   #############################################################################
-  pass
+
+  x,pool_param = cache
+  dx = np.zeros(x.shape)
+  pool_height = pool_param['pool_height']
+  pool_width = pool_param['pool_width']
+  S = pool_param['stride']
+
+  # Input number, dim, height, width
+  N, C_x, H_x, W_x = x.shape
+
+  H_out = 1 + (H_x - pool_height)/S
+  W_out = 1 + (W_x - pool_width)/S
+
+  # V_shape = (N, C_x, H_out, W_out)
+
+  for n in range(N):          # loop through x inputs
+    for i in range(H_out):    # loop/step through height
+      for j in range(W_out):  # loop/step through width 
+          ws = j*S                # width start
+          we = pool_width+S*j     # width end
+          hs = i*S                # height start
+          he = pool_height+S*i    # height end
+         
+          for c in range(C_x):
+            mask = x[n, c, hs:he, ws:we]
+            # print mask.shape
+            # print mask
+            # print np.max(mask) == mask
+            # The max value is set to 1, then multiplied by dout
+            dx[n,c,hs:he,ws:we] += (np.max(mask) == mask) * dout[n,c,i,j]
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
