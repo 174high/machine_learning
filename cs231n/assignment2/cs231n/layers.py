@@ -464,21 +464,21 @@ def conv_forward_naive(x, w, b, conv_param):
   #############################################################################
   S = conv_param['stride']
   P = conv_param['pad']
-  
+
   N, C_x, H_x, W_x = x.shape
   F, C_w, HH_w, WW_w = w.shape
 
   # Pad AFTER sampling shape, otherwise calculating the output W, H 
   # wont be accurate
   npad = ((0,0), (0,0), (1,1), (1,1))
-  x = np.pad(x,pad_width=npad,mode='constant')
+  x_pad = np.pad(x,pad_width=npad,mode='constant')
 
   locations = 1 + (W_x + 2*P - WW_w)/S #(W_x - WW_w + 2*P)/float(S) + 1
 
   H_out = 1 + (H_x + 2*P - HH_w)/S
   W_out = 1 + (W_x + 2*P - WW_w)/S
-  print locations
-  V_shape = (locations, F, H_out, W_out)
+
+  V_shape = (N, F, H_out, W_out)
   # print V_shape
   V = np.zeros(V_shape)
 
@@ -506,7 +506,7 @@ def conv_forward_naive(x, w, b, conv_param):
           hs = i*S        # height start
           he = WW_w+S*i   # height end
           # output of dim (N, F, H', W')
-          V[n, f, i, j] = np.sum(x[n, :, hs:he, ws:we] * w[f]) + b[f]
+          V[n, f, i, j] = np.sum(x_pad[n, :, hs:he, ws:we] * w[f]) + b[f]
 
   out = V 
   #############################################################################
@@ -533,7 +533,54 @@ def conv_backward_naive(dout, cache):
   #############################################################################
   # TODO: Implement the convolutional backward pass.                          #
   #############################################################################
-  pass
+
+  # print "test"
+  # print dout.shape
+  x,w,b,conv_param = cache
+  S = conv_param['stride']
+  P = conv_param['pad']
+
+  F,N,H_out,W_out = dout.shape 
+  N, C_x, H_x, W_x = x.shape
+  F, C_w, HH_w, WW_w = w.shape
+
+  dx = np.zeros(x.shape)
+  dw = np.zeros(w.shape)
+  db = np.zeros(b.shape)
+
+  # print x.shape
+  npad = ((0,0), (0,0), (1,1), (1,1))
+  dx = np.pad(dx, pad_width=npad, mode='constant')
+  x_pad = np.pad(x, pad_width=npad, mode='constant')
+
+
+  for f in range(F):            # loop through filters
+    for n in range(N):          # loop through x inputs
+      for i in range(H_out):    # loop/step through height
+        for j in range(W_out):  # loop/step through width
+          # walk horizontal, then vertical
+          # calculate the convolution dimensions (the x's in above diagram)
+          ws = j*S        # width start
+          we = WW_w+S*j   # width end
+          hs = i*S        # height start
+          he = WW_w+S*i   # height end
+          # output of dim (N, F, H', W')
+          #V[n, f, i, j] = np.sum(x[n, :, hs:he, ws:we] * w[f]) + b[f]
+          d_o = dout[n, f, i, j]
+
+
+          # print d_o * x[n, :, hs:he, ws:we]
+          # print dx[n, :, hs:he, ws:we].shape
+          dx[n, :, hs:he, ws:we] += d_o * w[f] 
+          # print dx[n, :, hs:he, ws:we].shape
+          # print x_pad.shape
+          # print j
+          dw[f] += d_o * x_pad[n, :, hs:he, ws:we]
+          db[f] += d_o
+
+  # unpad
+  dx = np.pad(dx, ((0,0),(0,0),(0,0),(0,0)), mode='constant')[:,:,1:-1,1:-1]
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
