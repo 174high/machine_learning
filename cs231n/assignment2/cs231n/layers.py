@@ -479,7 +479,6 @@ def conv_forward_naive(x, w, b, conv_param):
   W_out = 1 + (W_x + 2*P - WW_w)/S
 
   V_shape = (N, F, H_out, W_out)
-  # print V_shape
   V = np.zeros(V_shape)
 
 
@@ -606,7 +605,33 @@ def max_pool_forward_naive(x, pool_param):
   #############################################################################
   # TODO: Implement the max pooling forward pass                              #
   #############################################################################
-  pass
+  pool_height = pool_param['pool_height']
+  pool_width = pool_param['pool_width']
+  S = pool_param['stride']
+
+  # Input number, dim, height, width
+  N, C_x, H_x, W_x = x.shape
+
+  H_out = 1 + (H_x - pool_height)/S
+  W_out = 1 + (W_x - pool_width)/S
+
+  V_shape = (N, C_x, H_out, W_out)
+  V = np.zeros(V_shape)
+  print V_shape
+
+  for n in range(N):          # loop through x inputs
+    for i in range(H_out):    # loop/step through height
+      for j in range(W_out):  # loop/step through width 
+          ws = j*S                # width start
+          we = pool_width+S*j     # width end
+          hs = i*S                # height start
+          he = pool_height+S*i    # height end
+          # output of dim (N, Dim, H', W')
+          # max axis=(1,2) finds maximum of 2x2 across the 3 dims of x
+          V[n, :, i, j] = np.max(x[n, :, hs:he, ws:we], axis=(1,2))
+
+  out = V
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
