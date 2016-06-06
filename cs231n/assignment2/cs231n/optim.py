@@ -162,23 +162,25 @@ def adam(x, dx, config=None):
   v = config['v']
   t = config['t']
 
-  m = beta1*m + (1-beta1)*dx
-  v = beta2*v + (1-beta2)*(dx**2)
-  x += -learning_rate * m/(np.sqrt(v) + eps)
 
+
+  # It is critical that config['t'] is added before all calculations!
+  config['t'] += 1
+
+  m = beta1 * m + (1 - beta1) * dx
+  v = beta2 * v + (1 - beta2) * dx**2
+
+  m_h = m / (1 - (beta1)**config['t'])
+  v_h = v / (1 - (beta2)**config['t'])
+  x += - learning_rate * m_h / (np.sqrt(v_h + eps))
   next_x = x
 
   config['m'] = m
   config['v'] = v
-  config['t'] += 1
 
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
   
   return next_x, config
-
-  
-  
-  
 

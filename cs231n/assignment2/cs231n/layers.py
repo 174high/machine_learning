@@ -512,6 +512,7 @@ def conv_forward_naive(x, w, b, conv_param):
   #                             END OF YOUR CODE                              #
   #############################################################################
   cache = (x, w, b, conv_param)
+  # print out.shape
   return out, cache
 
 
