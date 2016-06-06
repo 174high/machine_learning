@@ -170,6 +170,14 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   - out: of shape (N, D)
   - cache: A tuple of values needed in the backward pass
   """
+
+  """
+  x_m = 1/m * sum(x)
+  sigma = 1/m * sum((x - x_m)**2)
+
+  x_g = (x - x_m) / sqrt(sigma + eps)
+  shifted = gamma * x_g + beta
+  """
   mode = bn_param['mode']
   eps = bn_param.get('eps', 1e-5)
   momentum = bn_param.get('momentum', 0.9)
@@ -722,7 +730,11 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   # version of batch normalization defined above. Your implementation should  #
   # be very short; ours is less than five lines.                              #
   #############################################################################
-  pass
+  # Reg batchnorm forward takes input (N,D)
+
+  out, cache = batchnorm_forward(x, gamma, beta, bn_param)
+
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
