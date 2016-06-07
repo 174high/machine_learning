@@ -734,7 +734,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   # (N,C,H,W)
 
   """
-  
+  Before:
   Think of the dims we have as having N numbers of cubes (W,H,C)
 
   Perform batchnorm by walking along the width and height, pixel by pixel and
@@ -742,10 +742,16 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
 
   """
   N,C,H,W = x.shape
-  out = np.zeros(x.shape)
-  for w in range(W):
-    for h in range(H):
-      out[:,:,h,w], cache = batchnorm_forward(x[:,:,h,w], gamma, beta, bn_param)
+  # out = np.zeros(x.shape)
+  # cache = np.zeros((H,W))
+  # print cache.shape
+  # for w in range(W):
+  #   for h in range(H):
+  #     out[:,:,h,w], cache = batchnorm_forward(x[:,:,h,w], gamma, beta, bn_param)
+
+  x_r = np.transpose(x, (0,2,3,1)).reshape(N*W*H, C)
+  out, cache = batchnorm_forward(x_r, gamma, beta, bn_param)
+  out = out.reshape(N,H,W,C).transpose(0,3,1,2)
 
   #############################################################################
   #                             END OF YOUR CODE                              #
@@ -775,7 +781,12 @@ def spatial_batchnorm_backward(dout, cache):
   # version of batch normalization defined above. Your implementation should  #
   # be very short; ours is less than five lines.                              #
   #############################################################################
-  pass
+  
+  N,C,H,W = dout.shape
+  dout_r = dout.transpose(0,2,3,1).reshape(N*W*H, C)
+  dx, dgamma, dbeta = batchnorm_backward(dout_r, cache)
+  dx = dx.reshape(N,H,W,C).transpose(0,3,1,2)
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
