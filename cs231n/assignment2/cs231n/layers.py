@@ -731,16 +731,27 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   # be very short; ours is less than five lines.                              #
   #############################################################################
   # Reg batchnorm forward takes input (N,D)
+  # (N,C,H,W)
 
-  out, cache = batchnorm_forward(x, gamma, beta, bn_param)
+  """
+  
+  Think of the dims we have as having N numbers of cubes (W,H,C)
 
+  Perform batchnorm by walking along the width and height, pixel by pixel and
+  take a batchnorm across the long depth 
+
+  """
+  N,C,H,W = x.shape
+  out = np.zeros(x.shape)
+  for w in range(W):
+    for h in range(H):
+      out[:,:,h,w], cache = batchnorm_forward(x[:,:,h,w], gamma, beta, bn_param)
 
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
 
   return out, cache
-
 
 def spatial_batchnorm_backward(dout, cache):
   """
