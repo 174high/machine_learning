@@ -55,9 +55,9 @@ class ThreeLayerConvNet(object):
     f_width = filter_size
     pad = (filter_size - 1) / 2
 
+    #Conv width height output to be used in next W2 shape
     Cw_out = 1 + (W + 2 * pad - f_width) / stride_conv
     Ch_out = 1 + (H + 2 * pad - f_height) / stride_conv
-    
 
     # Convolutional layer weights and bias
     print Ch_out
