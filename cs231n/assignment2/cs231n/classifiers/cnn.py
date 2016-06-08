@@ -119,7 +119,6 @@ class ThreeLayerConvNet(object):
     ar_out, cache_1 = affine_relu_forward(crp_out, W2, b2)
     scores, cache_2 = affine_forward(ar_out, W3, b3)
    
-
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
