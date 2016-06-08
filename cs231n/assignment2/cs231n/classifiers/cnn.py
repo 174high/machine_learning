@@ -115,9 +115,9 @@ class ThreeLayerConvNet(object):
     ############################################################################
     
     #conv - relu - 2x2 max pool - affine - relu - affine - softmax
-    crp_out, cache_0 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
-    ar_out, cache_1 = affine_relu_forward(crp_out, W2, b2)
-    scores, cache_2 = affine_forward(ar_out, W3, b3)
+    crp_out, cache_1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+    ar_out, cache_2 = affine_relu_forward(crp_out, W2, b2)
+    scores, cache_3 = affine_forward(ar_out, W3, b3)
    
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -139,9 +139,9 @@ class ThreeLayerConvNet(object):
     loss += regularization
 
     #softmax - affine - relu - affine - 2x2 max pool - relu - conv
-    dx,dw3,db3 = affine_backward(dscores, cache_2)
-    dx,dw2,db2 = affine_relu_backward(dx, cache_1)
-    dx,dw1,db1 = conv_relu_pool_backward(dx, cache_0)
+    dx,dw3,db3 = affine_backward(dscores, cache_3)
+    dx,dw2,db2 = affine_relu_backward(dx, cache_2)
+    dx,dw1,db1 = conv_relu_pool_backward(dx, cache_1)
 
     grads['W1'] = dw1 + self.reg * W1
     grads['W2'] = dw2 + self.reg * W2

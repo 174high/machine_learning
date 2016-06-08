@@ -319,7 +319,7 @@ class FullyConnectedNet(object):
         bi = "b{i}".format(i=layer_i)
         Ai = "A{i}".format(i=layer_i)       # Affine cache
         Ri = "R{i}".format(i=layer_i)       # ReLU cache
-        BNi = "BN{i}".format(i=layer_i)   # BatchNorm cache
+        BNi = "BNC{i}".format(i=layer_i)     # BatchNorm cache
         Di = "D{i}".format(i=layer_i)       # Dropout cache
 
         _W = self.params[Wi]

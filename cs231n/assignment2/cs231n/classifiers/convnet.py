@@ -20,8 +20,8 @@ class FullyConnectedConvNet(object):
   Similar to the TwoLayerNet above, learnable parameters are stored in the
   self.params dictionary and will be learned using the Solver class.
   """
-  def __init__(self, input_dim=(3, 32, 32), hidden_dims_affine=[20, 30, 40], num_filters=32, filter_size=7,
-               hidden_dim=100, num_classes=10, weight_scale=1e-3, reg=0.0,
+  def __init__(self, input_dim=(3, 32, 32), hidden_dims_affine=[100,100], num_filters=32, filter_size=7,
+                num_classes=10, weight_scale=1e-3, reg=0.0,
                dtype=np.float32):
     """
     Initialize a new network.
@@ -83,12 +83,10 @@ class FullyConnectedConvNet(object):
     Ph_out = 1 + (Ch_out - p_height) / stride_pool
 
 
-
+    self.use_batchnorm = False
     # Affine layer 1 weights and bias
     # print Cw_out
     # print F*p_width*p_height
-
-    
 
     # old way
     # self.params['W2'] = np.random.normal(scale=weight_scale,size=(F*Pw_out*Ph_out, hidden_dim))
@@ -101,18 +99,30 @@ class FullyConnectedConvNet(object):
     for layer_i in range(self.num_affine_layers):
         Wi = "W{i}".format(i=layer_i+1+self.num_conv_layers)
         bi = "b{i}".format(i=layer_i+1+self.num_conv_layers)
+        gi = "gamma{i}".format(i=layer_i+1+self.num_conv_layers)
+        betai = "beta{i}".format(i=layer_i+1+self.num_conv_layers)
 
-        if layer_i == 0:
+        if layer_i == 0: # first input
             self.params[Wi] = np.random.normal(scale=weight_scale, size=(F*Pw_out*Ph_out, hidden_dims_affine[layer_i]))
             self.params[bi] = np.zeros(hidden_dims_affine[layer_i])
-        elif layer_i == self.num_affine_layers-1:
-            # When it is
+            self.params[gi] = np.ones(hidden_dims_affine[layer_i])
+            self.params[betai] = np.zeros(hidden_dims_affine[layer_i])
+
+        elif layer_i == self.num_affine_layers-1: # regular affine, no relu layer
             self.params[Wi] = np.random.normal(scale=weight_scale, size=(hidden_dims_affine[layer_i-1], num_classes))
             self.params[bi] = np.zeros(num_classes)
-        else:
+        else:   # affine relu layers
             self.params[Wi] = np.random.normal(scale=weight_scale, size=(hidden_dims_affine[layer_i-1], hidden_dims_affine[layer_i]))
             self.params[bi] = np.zeros(hidden_dims_affine[layer_i])
 
+
+            self.params[gi] = np.ones(hidden_dims_affine[layer_i])
+            self.params[betai] = np.zeros(hidden_dims_affine[layer_i])
+
+
+    print self.params.keys()
+
+    self.bn_params = [{'mode': 'train'} for i in xrange(self.num_affine_layers - 1)]
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -132,10 +142,6 @@ class FullyConnectedConvNet(object):
     cache = {}  # storing our computations for ease of use in backprop
                 # originally used self.params, but reserve this only for
                 # Wi and bi.  Interferes with automated checks
-
-
-    # W2, b2 = self.params['W2'], self.params['b2']
-    # W3, b3 = self.params['W3'], self.params['b3']
     
     # pass conv_param to the forward pass for the convolutional layer
     filter_size = W1.shape[2]
@@ -151,24 +157,34 @@ class FullyConnectedConvNet(object):
     # variable.                                                                #
     ############################################################################
     
-    #conv - relu - 2x2 max pool - affine - relu - affine - softmax
-    crp_out, cache_0 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+    #conv - relu - 2x2 max pool - [affine - relu] x M - affine - softmax
+    scores, cache_0 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
     cache["c0"] = cache_0
 
     # Affine xxx
     for layer_i in range(self.num_affine_layers):
         Wi = "W{i}".format(i=layer_i+1+self.num_conv_layers)
         bi = "b{i}".format(i=layer_i+1+self.num_conv_layers)
-        ci = "c{i}".format(i=layer_i+self.num_conv_layers)
+        ci = "c{i}".format(i=layer_i+1+self.num_conv_layers) 
+        BNi = "BNC{i}".format(i=layer_i+1+self.num_conv_layers)   # BatchNorm cache
+        
+        gi = "gamma{i}".format(i=layer_i+1+self.num_conv_layers)
+        betai = "beta{i}".format(i=layer_i+1+self.num_conv_layers)
 
         W = self.params[Wi]
         b = self.params[bi]
-        # print Wi
-        if layer_i == 0:
-            af_out, cache[ci] = affine_relu_forward(crp_out, W, b)
-        else:
-            scores, cache[ci] = affine_forward(af_out, W, b)
 
+        if layer_i == self.num_affine_layers-1: # output layer
+            scores, cache[ci] = affine_forward(scores, W, b)
+        else:
+            scores, cache[ci] = affine_relu_forward(scores, W, b)
+            if self.use_batchnorm:
+                gamma = self.params[gi]
+                beta = self.params[betai]
+                scores, bn_cache = batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i])
+                cache[BNi] = bn_cache
+
+    # scores = out
 
     ############################################################################
     #                             END OF YOUR CODE                             #
@@ -184,10 +200,10 @@ class FullyConnectedConvNet(object):
     # data loss using softmax, and make sure that grads[k] holds the gradients #
     # for self.params[k]. Don't forget to add L2 regularization!               #
     ############################################################################
-    loss, dscores = softmax_loss(scores, y)
+    loss, dx = softmax_loss(scores, y)
 
     regularization = 0
-    for layer_i in range(self.num_affine_layers):
+    for layer_i in range(self.num_layers):
         Wi = "W{i}".format(i=layer_i+1)
         W = self.params[Wi]
         regularization += (0.5 * self.reg * np.sum(W**2))
@@ -195,33 +211,35 @@ class FullyConnectedConvNet(object):
     loss += regularization
 
     #softmax - affine - relu - affine - 2x2 max pool - relu - conv
-    for layer_i in range(self.num_layers, self.num_affine_layers-1,-1):
-        Wi = "W{i}".format(i=layer_i)
-        bi = "b{i}".format(i=layer_i)
-        ci = "c{i}".format(i=layer_i-1)
+    for layer_i in range(self.num_affine_layers, 0, -1):
+        Wi = "W{i}".format(i=layer_i+1)
+        bi = "b{i}".format(i=layer_i+1)
+        ci = "c{i}".format(i=layer_i+1) 
 
-        if layer_i == self.num_layers:
-            dx,dw,db = affine_backward(dscores, cache[ci])
-            grads[Wi] = dw + self.reg * self.params[Wi]
-            grads[bi] = db
+        BNi = "BNC{i}".format(i=layer_i+1)        # Batchnorm cache
+        gammai = "gamma{i}".format(i=layer_i+1)   # gamma gradient
+        betai = "beta{i}".format(i=layer_i+1)     # beta gradient
+
+        if layer_i == self.num_affine_layers:
+            dx,dw,db = affine_backward(dx, cache[ci])
         else:
+            if self.use_batchnorm:
+                bn_cache = cache[BNi]
+                dx, dgamma, dbeta = batchnorm_backward(dx, bn_cache)
+                grads[gammai] = dgamma
+                grads[betai] = dbeta
+
+
             dx,dw,db = affine_relu_backward(dx, cache[ci])
-            grads[Wi] = dw + self.reg * self.params[Wi]
-            grads[bi] = db
 
-    # import pdb; pdb.set_trace()
-    cache_2 = cache["c2"]
-    cache_1 = cache["c1"]
-    dx,dw3,db3 = affine_backward(dscores, cache_2)
-    dx,dw2,db2 = affine_relu_backward(dx, cache_1)
-    dx,dw1,db1 = conv_relu_pool_backward(dx, cache_0)
 
+        grads[Wi] = dw + self.reg * self.params[Wi]
+        grads[bi] = db
+
+
+    dx,dw1,db1 = conv_relu_pool_backward(dx, cache["c0"])
     grads['W1'] = dw1 + self.reg * self.params['W1']
-    # grads['W2'] = dw2 + self.reg * self.params['W2']
-    # grads['W3'] = dw3 + self.reg * self.params['W3']
-    # grads['b1'] = db1
-    # grads['b2'] = db2
-    # grads['b3'] = db3
+    grads['b1'] = db1
 
     ############################################################################
     #                             END OF YOUR CODE                             #
