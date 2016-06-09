@@ -121,10 +121,12 @@ def relu_backward(dout, cache):
   # TODO: Implement the ReLU backward pass.                                   #
   #############################################################################
   #XXX: todo: initialize dx = np.zeros(x.shape), retest
-  dx = x  
-  dx[dx>0] = 1
-  dx[dx<=0] = 0
-  dx = dx * dout # multiply by upstream derivative
+  # dx = x  
+  # dx[dx>0] = 1
+  # dx[dx<=0] = 0
+  # dx = dx * dout # multiply by upstream derivative
+
+  dx = dout * (x>=0)
 
   #############################################################################
   #                             END OF YOUR CODE                              #
