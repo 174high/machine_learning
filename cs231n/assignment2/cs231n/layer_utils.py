@@ -61,7 +61,10 @@ def affine_norm_relu_backward(dout, cache):
     h_cache, hnorm_cache, relu_cache = cache
 
     dhnormrelu = relu_backward(dout, relu_cache)
-    dhnorm, dgamma, dbeta = batchnorm_backward_alt(dhnormrelu, hnorm_cache)
+    # commenting out original because I did not implement alt
+    # dhnorm, dgamma, dbeta = batchnorm_backward_alt(dhnormrelu, hnorm_cache)
+    dhnorm, dgamma, dbeta = batchnorm_backward(dhnormrelu, hnorm_cache)
+
     dx, dw, db = affine_backward(dhnorm, h_cache)
 
     return dx, dw, db, dgamma, dbeta

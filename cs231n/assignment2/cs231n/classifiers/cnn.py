@@ -36,6 +36,7 @@ class ThreeLayerConvNet(object):
     self.params = {}
     self.reg = reg
     self.dtype = dtype
+    self.weight_scale = weight_scale
     
     ############################################################################
     # TODO: Initialize weights and biases for the three-layer convolutional    #
@@ -71,6 +72,9 @@ class ThreeLayerConvNet(object):
     stride_pool = 2 #typical setting, also set below in loss
     Pw_out = 1 + (Cw_out - p_width) / stride_pool
     Ph_out = 1 + (Ch_out - p_height) / stride_pool
+
+
+    print (F, C, f_height, f_width)
 
     # Affine layer 1 weights and bias
     # print Cw_out
@@ -120,6 +124,7 @@ class ThreeLayerConvNet(object):
     
     #conv - relu - 2x2 max pool - affine - relu - affine - softmax
     crp_out, cache_1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+    print crp_out.shape
     ar_out, cache_2 = affine_relu_forward(crp_out, W2, b2)
     ar_out2, cache_3 = affine_relu_forward(ar_out, W3, b3)
     scores, cache_4 = affine_forward(ar_out2, W4, b4)

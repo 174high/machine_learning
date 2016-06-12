@@ -8,21 +8,24 @@ from cs231n.layer_utils import *
 
 class FullyConnectedConvNet(object):
   """
-  A fully-connected neural network with an arbitrary number of hidden layers,
-  ReLU nonlinearities, and a softmax loss function. This will also implement
-  dropout and batch normalization as options. For a network with L layers,
-  the architecture will be
+  A fully-connected convolutional neural network with an arbitrary number of convolutional network
+  and arbitrary number of hidden layers in the fully-connected layers.
 
-  [conv-relu-pool] x N - [affine-relu] x M - affine - [softmax or SVM]
+  Softmax is used for loss function.  This will also implement
+  dropout and batch normalization as options. For a network with M convolutions and L 
+  fully connected layers,
+  the architecture will be:
+
+  [conv-relu-pool] x M - [affine-[batch norm]-relu-[dropout]] x L - affine - [softmax or SVM]
   
-  {affine - [batch norm] - relu - [dropout]} x (L - 1) - affine - softmax
-  
-  Similar to the TwoLayerNet above, learnable parameters are stored in the
+  Similar to the ThreeLayerConvNet above, learnable parameters are stored in the
   self.params dictionary and will be learned using the Solver class.
   """
-  def __init__(self, input_dim=(3, 32, 32), hidden_dims_affine=[100,100], num_filters=32, filter_size=7,
-                num_classes=10, weight_scale=1e-3, reg=0.0, use_batchnorm=False,
-               dtype=np.float32):
+  def __init__(self, input_dim=(3, 32, 32), conv_layers=1, hidden_dims_affine=[100,100], 
+                num_filters=32, filter_size=7,
+                num_classes=10, weight_scale=1e-3, reg=0.0, 
+                use_batchnorm=False, dropout=0, seed=None,
+                dtype=np.float32):
     """
     Initialize a new network.
     
@@ -37,6 +40,12 @@ class FullyConnectedConvNet(object):
     - weight_scale: Scalar giving standard deviation for random initialization
       of weights.
     - reg: Scalar giving L2 regularization strength
+    - use_batchnorm: Whether or not the network should use batch normalization.
+    - dropout: Scalar between 0 and 1 giving dropout strength. If dropout=0 then
+      the network should not use dropout at all.
+    - seed: If not None, then pass this random seed to the dropout layers. This
+      will make the dropout layers deteriminstic so we can gradient check the
+      model.
     - dtype: numpy datatype to use for computation.
     """
     self.params = {}
@@ -54,12 +63,13 @@ class FullyConnectedConvNet(object):
     # of the output affine layer.                                              #
     ############################################################################
     self.use_batchnorm = use_batchnorm
-
+    self.use_dropout = dropout > 0
 
     C,H,W = input_dim
+    
     F = num_filters
 
-    self.num_conv_layers = 1
+    self.num_conv_layers = conv_layers
     self.num_affine_layers = len(hidden_dims_affine)
     self.num_layers = self.num_affine_layers + self.num_conv_layers
 
@@ -70,48 +80,41 @@ class FullyConnectedConvNet(object):
 
     #Conv width height output to be used in next W2 shape
     for layer_i in range(self.num_conv_layers):
+        print "input dim:"
+        print C,H,W
         Wi = "W{i}".format(i=layer_i+1)
         bi = "b{i}".format(i=layer_i+1)
-
 
         Cw_out = 1 + (W + 2 * pad - f_width) / stride_conv
         Ch_out = 1 + (H + 2 * pad - f_height) / stride_conv
 
         # Convolutional layer weights and bias
         # print Ch_out
-        #w1,b1
+        # w1,b1
 
         # first layer
         if layer_i == 0:
             self.params[Wi] = np.random.normal(scale=weight_scale, size=(F, C, f_height, f_width))
             self.params[bi] = np.zeros(F)
         else:
-            print "shouldnt be hitting"
-            pass
+            self.params[Wi] = np.random.normal(scale=weight_scale, size=(F, C, f_height, f_width))
+            self.params[bi] = np.zeros(F)
     
         # output from conv layer: [num_filters]x32x32
         # 2x2 pool will downsize: [num_filters]x16x16//double check
 
+        # 2x2 pooling:
         p_width = 2
         p_height = 2
-        stride_pool = 2 #mtypical setting, also set below in loss
+        stride_pool = 2 # typical setting, also set below in loss
         Pw_out = 1 + (Cw_out - p_width) / stride_pool
         Ph_out = 1 + (Ch_out - p_height) / stride_pool
 
+        W = Pw_out
+        H = Ph_out
+        
+        C = F
 
-    
-    # Affine layer 1 weights and bias
-    # print Cw_out
-    # print F*p_width*p_height
-
-    # old way
-    # self.params['W2'] = np.random.normal(scale=weight_scale,size=(F*Pw_out*Ph_out, hidden_dim))
-    # self.params['b2'] = np.zeros(hidden_dim)
-
-    # # Affine layer 2 weights and bias
-    # self.params['W3'] = np.random.normal(scale=weight_scale, size=(hidden_dim, num_classes))
-    # self.params['b3'] = np.zeros(num_classes)
-    # print hidden_dim
     for layer_i in range(self.num_affine_layers):
         Wi = "W{i}".format(i=layer_i+1+self.num_conv_layers)
         bi = "b{i}".format(i=layer_i+1+self.num_conv_layers)
@@ -139,8 +142,13 @@ class FullyConnectedConvNet(object):
                 self.params[betai] = np.zeros(hidden_dims_affine[layer_i])
 
 
-    print self.params.keys()
+    self.dropout_param = {}
+    if self.use_dropout:
+        self.dropout_param = {'mode': 'train', 'p': dropout}
+        if seed is not None:
+            self.dropout_param['seed'] = seed
 
+    # if self.use_batchnorm:
     self.bn_params = [{'mode': 'train'} for i in xrange(self.num_affine_layers - 1)]
 
     ############################################################################
@@ -165,12 +173,7 @@ class FullyConnectedConvNet(object):
     # pass conv_param to the forward pass for the convolutional layer
     # filter_size = W1.shape[2]
     # print self.params['W1'].shape
-    filter_size = self.params['W1'].shape[2] #XXX: double check this, will this change from 7?
-
-    conv_param = {'stride': 1, 'pad': (filter_size - 1) / 2}
-
-    # pass pool_param to the forward pass for the max-pooling layer
-    pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
+    
 
     scores = None
     ############################################################################
@@ -179,29 +182,41 @@ class FullyConnectedConvNet(object):
     # variable.                                                                #
     ############################################################################
     
-    #conv - relu - 2x2 max pool - [affine - relu] x M - affine - softmax
-
-
+    #[conv - relu - 2x2 max pool] X M - [affine - relu] x O - affine - softmax
+    scores = X
     for layer_i in range(self.num_conv_layers):
         Wi = "W{i}".format(i=layer_i+1)
         bi = "b{i}".format(i=layer_i+1)
         ci = "c{i}".format(i=layer_i+1) 
+
+        filter_size = self.params[Wi].shape[2] #XXX: double check this, will this change from 7? #W1 before
+        conv_param = {'stride': 1, 'pad': (filter_size - 1) / 2}
+
+        # pass pool_param to the forward pass for the max-pooling layer
+        pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
+
         # print ci
         W = self.params[Wi]
         b = self.params[bi]
 
-        scores, cache[ci] = conv_relu_pool_forward(X, W, b, conv_param, pool_param)
+        scores, cache[ci] = conv_relu_pool_forward(scores, W, b, conv_param, pool_param)
+
+        # print "--"
+        # print scores.shape
+        # (conv_cache, relu_cache, pool_cache)
 
     #(50, 32, 16, 16)
-    print X.shape
-    print scores.shape
+    # print X.shape
+    # print scores.shape
 
     # Affine xxx
     for layer_i in range(self.num_affine_layers):
+
         Wi = "W{i}".format(i=layer_i+1+self.num_conv_layers)
         bi = "b{i}".format(i=layer_i+1+self.num_conv_layers)
         ci = "c{i}".format(i=layer_i+1+self.num_conv_layers) 
-        BNi = "BNC{i}".format(i=layer_i+1+self.num_conv_layers)   # BatchNorm cache
+        BNi = "BNC{i}".format(i=layer_i+1+self.num_conv_layers) # BatchNorm cache
+        Di = "D{i}".format(i=layer_i+1+self.num_conv_layers)    # Dropout cache     
         
         gi = "gamma{i}".format(i=layer_i+1+self.num_conv_layers)
         betai = "beta{i}".format(i=layer_i+1+self.num_conv_layers)
@@ -212,12 +227,17 @@ class FullyConnectedConvNet(object):
         if layer_i == self.num_affine_layers-1: # output layer
             scores, cache[ci] = affine_forward(scores, W, b)
         else:
-            scores, cache[ci] = affine_relu_forward(scores, W, b)
             if self.use_batchnorm:
                 gamma = self.params[gi]
                 beta = self.params[betai]
-                scores, bn_cache = batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i])
+                # scores, bn_cache = batchnorm_forward(scores, gamma, beta, self.bn_params[layer_i])
+                scores, bn_cache = affine_norm_relu_forward(scores, W, b, gamma, beta, self.bn_params[layer_i])
                 cache[BNi] = bn_cache
+            else:
+                scores, cache[ci] = affine_relu_forward(scores, W, b)
+
+            if self.use_dropout:
+                scores, cache[Di] = dropout_forward(scores, self.dropout_param)
 
     # scores = out
 
@@ -246,27 +266,31 @@ class FullyConnectedConvNet(object):
 
     loss += regularization
 
-    #softmax - affine - relu - affine - 2x2 max pool - relu - conv
+    # softmax - affine - [relu - affine] - [2x2 max pool - relu - conv]
+    # Start at total number of layers-1, end at num of convolutional layers
     for layer_i in range(self.num_layers-1, self.num_conv_layers-1, -1):
         Wi = "W{i}".format(i=layer_i+1)
         bi = "b{i}".format(i=layer_i+1)
         ci = "c{i}".format(i=layer_i+1) 
 
         BNi = "BNC{i}".format(i=layer_i+1)        # Batchnorm cache
+        Di = "D{i}".format(i=layer_i+1)           # Dropout cache
         gammai = "gamma{i}".format(i=layer_i+1)   # gamma gradient
         betai = "beta{i}".format(i=layer_i+1)     # beta gradient
 
-        if layer_i == self.num_affine_layers:
+
+        if layer_i == self.num_layers-1: # output layer
             dx,dw,db = affine_backward(dx, cache[ci])
-        else:
+        else:    
+            if self.use_dropout:
+                dx = dropout_backward(dx, cache[Di])
+
             if self.use_batchnorm:
-                bn_cache = cache[BNi]
-                dx, dgamma, dbeta = batchnorm_backward(dx, bn_cache)
+                dx, dw, db, dgamma, dbeta = affine_norm_relu_backward(dx, cache[BNi])
                 grads[gammai] = dgamma
                 grads[betai] = dbeta
-
-
-            dx,dw,db = affine_relu_backward(dx, cache[ci])
+            else:
+                dx,dw,db = affine_relu_backward(dx, cache[ci])
 
 
         grads[Wi] = dw + self.reg * self.params[Wi]
