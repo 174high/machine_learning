@@ -186,19 +186,16 @@ def rnn_backward(dh, cache):
   dh0 = np.zeros((N, H))
   db = np.zeros((H))
   
-
+  # Reverse upstream of gradients to get the last grad (from fwd pass) first
   for i in reversed(range(T)):
-    # loop over cache backwards
     dh_current = dh[:,i,:] + dh_prev
     dx_t, dh_prev, dWx_t, dWh_t, db_t = rnn_step_backward(dh_current, cache[i])
     dx[i] = dx_t
-    dh0 = dh_prev
     dWx += dWx_t
     dWh += dWh_t
     db += db_t
-    # print dx.shape
-
-    # print dx.shape
+    if i==0:
+      dh0 = dh_prev
 
   # Want N,T,D from T,N,D
   dx  = dx.transpose(1,0,2)
@@ -230,7 +227,23 @@ def word_embedding_forward(x, W):
   #                                                                            #
   # HINT: This should be very simple.                                          #
   ##############################################################################
-  pass
+  # x: (N, T), minibatch of size N, each batch has length T
+
+  N,T = x.shape
+  V,D = W.shape
+
+  c_batch = np.empty((T,V))
+  out = np.empty((N,T,D))
+  for batch_i in range(N):
+    for i, word in enumerate(x[batch_i]):
+      converted = np.zeros(V)
+      converted[word] = 1 
+      c_batch[i] = converted
+    # print c_batch
+
+    out[batch_i] = np.dot(c_batch, W)
+
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
