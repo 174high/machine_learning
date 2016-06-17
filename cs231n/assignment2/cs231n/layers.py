@@ -65,9 +65,9 @@ def affine_backward(dout, cache):
   # un-roll: ex: (10, 2, 3) -> (10, 6) or (2, 4, 5, 6) -> (2, 120)
   x_r = np.reshape(x, (x.shape[0], -1))
 
-  db = (1) * np.sum(dout, axis=0) # dscore = np.dot(x, w) + b
-  dx = np.dot(dout, w.T)          # dscore = np.dot(x, w) + b
-  dw = np.dot(x_r.T, dout)        # dscore = np.dot(x, w) + b
+  db = (1) * np.sum(dout, axis=0) # dout = dscore = np.dot(x, w) + b
+  dx = np.dot(dout, w.T)          # dout = dscore = np.dot(x, w) + b
+  dw = np.dot(x_r.T, dout)        # dout = dscore = np.dot(x, w) + b
 
   # re-roll the params:
   # dx = np.reshape(dx, (x.shape[0], x.shape[1], -1))

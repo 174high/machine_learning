@@ -150,14 +150,33 @@ class CaptioningRNN(object):
     x = w_v
     h_all, rnn_fwd_cache = rnn_forward(x, h0, Wx, Wh, b)
 
-    # 4 
+    # 4 temporal affine transformation to compute scores over vocabulary
     scores, af_c = temporal_affine_forward(h_all, W_vocab, b_vocab)
 
+    # 5 softamx to compute loss using scores against captions_out 
     loss, dx = temporal_softmax_loss(scores, captions_out, mask, verbose=False)
 
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
+
+
+    dx, dW_vocab, db_vocab = temporal_affine_backward(dx, af_c)
+    dx, dh0, dWx, dWh, db = rnn_backward(dx, rnn_fwd_cache)
+    dW_embed = word_embedding_backward(dx, w_v_c)
+
+
+    # Backprop into # 1 h0 = np.dot(features, W_proj) + b_proj
+    db_proj = np.sum(dh0, axis=0)
+    dW_proj = np.dot(features.T, dh0) # XXX: note this is dh0!!
+    grads['b'] = db
+    grads['b_vocab'] = db_vocab
+    grads['W_embed'] = dW_embed
+    grads['W_proj'] = dW_proj
+    grads['W_vocab'] = dW_vocab
+    grads['Wh'] = dWh
+    grads['b_proj'] = db_proj
+    grads['Wx'] = dWx
     
     return loss, grads
 
