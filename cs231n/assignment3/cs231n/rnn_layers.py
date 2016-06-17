@@ -229,19 +229,23 @@ def word_embedding_forward(x, W):
   ##############################################################################
   # x: (N, T), minibatch of size N, each batch has length T
 
-  N,T = x.shape
-  V,D = W.shape
+  # Old method:
 
-  c_batch = np.empty((T,V))
-  out = np.empty((N,T,D))
-  for batch_i in range(N):
-    for i, word in enumerate(x[batch_i]):
-      converted = np.zeros(V)
-      converted[word] = 1 
-      c_batch[i] = converted
-    # print c_batch
+  # N,T = x.shape
+  # V,D = W.shape
 
-    out[batch_i] = np.dot(c_batch, W)
+  # c_batch = np.empty((T,V))
+  # out = np.empty((N,T,D))
+  # for batch_i in range(N):
+  #   for i, word in enumerate(x[batch_i]):
+  #     converted = np.zeros(V)
+  #     converted[word] = 1 
+  #     c_batch[i] = converted
+
+  #   out[batch_i] = np.dot(c_batch, W)
+
+  out = W[x]
+  cache = (x,W)
 
 
   ##############################################################################
@@ -271,7 +275,9 @@ def word_embedding_backward(dout, cache):
   #                                                                            #
   # HINT: Look up the function np.add.at                                       #
   ##############################################################################
-  pass
+  x, W = cache
+  dW = np.zeros(W.shape)
+  np.add.at(dW, x, dout) # x = indexes to add dout (gradient) to 
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
