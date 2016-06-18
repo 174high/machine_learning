@@ -37,9 +37,11 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
 
   # h_t = f_w(prev_h, x)
 
+  # previous state
   # N,H * H,H -> N,H
   p_state = np.dot(prev_h, Wh)
 
+  # current state
   # N,D * D,H -> N,H
   c_state = np.dot(x, Wx)
 
@@ -323,7 +325,19 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   # TODO: Implement the forward pass for a single timestep of an LSTM.        #
   # You may want to use the numerically stable sigmoid implementation above.  #
   #############################################################################
-  pass
+    
+
+  activation_vector = np.dot(x, Wx) + np.dot(prev_h, Wh) + b 
+  # activation vector (3,20), need to divide by 4 to give i,f,o,g each 5 for (3,5)
+  v_size = activation_vector.shape[1]/4
+  i = sigmoid(activation_vector[:,0*v_size:0*v_size+(v_size)])
+  f = sigmoid(activation_vector[:,1*v_size:1*v_size+(v_size)])
+  o = sigmoid(activation_vector[:,2*v_size:2*v_size+(v_size)])
+  g = np.tanh(activation_vector[:,3*v_size:3*v_size+(v_size)])
+
+  next_c = f * prev_c + i * g
+  next_h = o * np.tanh(next_c)
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################

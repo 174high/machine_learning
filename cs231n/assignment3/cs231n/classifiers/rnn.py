@@ -156,10 +156,6 @@ class CaptioningRNN(object):
     # 5 softamx to compute loss using scores against captions_out 
     loss, dx = temporal_softmax_loss(scores, captions_out, mask, verbose=False)
 
-    ############################################################################
-    #                             END OF YOUR CODE                             #
-    ############################################################################
-
 
     dx, dW_vocab, db_vocab = temporal_affine_backward(dx, af_c)
     dx, dh0, dWx, dWh, db = rnn_backward(dx, rnn_fwd_cache)
@@ -177,6 +173,12 @@ class CaptioningRNN(object):
     grads['Wh'] = dWh
     grads['b_proj'] = db_proj
     grads['Wx'] = dWx
+    ############################################################################
+    #                             END OF YOUR CODE                             #
+    ############################################################################
+
+
+    
     
     return loss, grads
 
@@ -209,6 +211,14 @@ class CaptioningRNN(object):
     captions = self._null * np.ones((N, max_length), dtype=np.int32)
 
     # Unpack parameters
+    # initialize params for first layer hidden state h0
+    """
+    My notes:
+    - Wx: Weight matrix for input-to-hidden connections, of shape (D, H)
+    - Wh: Weight matrix for hidden-to-hidden connections, of shape (H, H)
+    - b: Biases of shape (H,)
+    - W_proj hidden state projection parameters
+    """
     W_proj, b_proj = self.params['W_proj'], self.params['b_proj']
     W_embed = self.params['W_embed']
     Wx, Wh, b = self.params['Wx'], self.params['Wh'], self.params['b']
@@ -235,7 +245,29 @@ class CaptioningRNN(object):
     # functions; you'll need to call rnn_step_forward or lstm_step_forward in #
     # a loop.                                                                 #
     ###########################################################################
-    pass
+
+    """
+    Notes:  operates on an array of image features at a time
+    
+    """
+    vocab_size = len(self.word_to_idx)
+
+    h0 = np.dot(features, W_proj) + b_proj
+    next_h = h0
+    captions[:,0] = self._start
+    # 1
+    x = W_embed[captions[:,0]]
+    for t in xrange(max_length):
+        # 2
+        next_h,_ = rnn_step_forward(x, next_h, Wx, Wh, b)
+        # 3
+        scores = np.dot(next_h, W_vocab) + b_vocab
+        # 4
+        captions[:,t] = np.argmax(scores, axis=1)
+        x = W_embed[captions[:,t]]
+
+
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
