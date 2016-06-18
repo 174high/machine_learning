@@ -327,17 +327,31 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   #############################################################################
     
 
+  # Step 1 compute activation vector 
   activation_vector = np.dot(x, Wx) + np.dot(prev_h, Wh) + b 
+
+  # Step 2, divide activation vector into four vectors ai, af, ao, ag and 
+  # then compute the gates
   # activation vector (3,20), need to divide by 4 to give i,f,o,g each 5 for (3,5)
   v_size = activation_vector.shape[1]/4
-  i = sigmoid(activation_vector[:,0*v_size:0*v_size+(v_size)])
-  f = sigmoid(activation_vector[:,1*v_size:1*v_size+(v_size)])
-  o = sigmoid(activation_vector[:,2*v_size:2*v_size+(v_size)])
-  g = np.tanh(activation_vector[:,3*v_size:3*v_size+(v_size)])
 
+  ai = activation_vector[:,0*v_size:0*v_size+(v_size)]
+  af = activation_vector[:,1*v_size:1*v_size+(v_size)]
+  ao = activation_vector[:,2*v_size:2*v_size+(v_size)]
+  ag = activation_vector[:,3*v_size:3*v_size+(v_size)]
+
+  i = sigmoid(ai)
+  f = sigmoid(af)
+  o = sigmoid(ao)
+  g = np.tanh(ag)
+
+  # Step 3 compute the next cell state
   next_c = f * prev_c + i * g
+
+  # Step 4 compute next hidden state
   next_h = o * np.tanh(next_c)
 
+  cache = (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, activation_vector, next_c, prev_c)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -369,7 +383,40 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
   # the output value from the nonlinearity.                                   #
   #############################################################################
-  pass
+  (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, activation_vector, next_c, prev_c) = cache
+
+  # 4 backprop into next_h = o * np.tanh(next_c)
+  do = np.tanh(next_c) * dnext_h
+  dnext_c += (1 - (np.tanh(next_c)**2)) * o * dnext_h
+
+  # 3 backprop into next_c = f * prev_c + i * g
+  df = prev_c * dnext_c
+  dprev_c = f * dnext_c
+  di = g * dnext_c
+  dg = i * dnext_c
+
+  # 2 back prop into activation layer
+  # i = sigmoid(ai)
+  # f = sigmoid(af)
+  # o = sigmoid(ao)
+  # g = np.tanh(ag)
+  dag = (1-g**2) * dg
+  dao = o*(1-o) * do
+  daf = f*(1-f) * df
+  dai = i*(1-i) * di
+
+  # Stack each of the activation vector derivatives to get complete derivative of
+  # activation vector
+  dactivation_vector = np.hstack((dai,daf,dao,dag))
+
+  # backprop into activation_vector = np.dot(x, Wx) + np.dot(prev_h, Wh) + b 
+  dx = np.dot(dactivation_vector, Wx.T)
+  dWx = np.dot(x.T,dactivation_vector)
+
+  dprev_h = np.dot(dactivation_vector, Wh.T)
+  dWh = np.dot(prev_h.T, dactivation_vector)
+  db = np.sum(dactivation_vector, axis=0) 
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
