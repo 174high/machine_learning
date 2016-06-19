@@ -129,23 +129,18 @@ def rnn_forward(x, h0, Wx, Wh, b):
 
   N,T,D = x.shape
   _,H = h0.shape
-  h = np.empty((T,N,H))
-  cache = []# np.empty(x.shape[1])
+  h = np.empty((N,T,H))
+  cache = [] 
 
-  for i in range(x.shape[1]):
-    if i==0:
+  for t in range(x.shape[1]):
+    if t==0:
       h_prev = h0
-    else:
-      h_prev = h[i-1]
-      
-    # (T,N,H)
-    h[i], cnext = rnn_step_forward(x[:,i,:], h_prev, Wx, Wh, b)
+
+    h_prev, cnext = rnn_step_forward(x[:,t,:], h_prev, Wx, Wh, b)
+    h[:,t,:] = h_prev
     cache.append(cnext)
 
-
-  h = h.transpose(1,0,2)
   # output (N, T, H)
-
 
   ##############################################################################
   #                               END OF YOUR CODE                             #
@@ -335,6 +330,7 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   # activation vector (3,20), need to divide by 4 to give i,f,o,g each 5 for (3,5)
   v_size = activation_vector.shape[1]/4
 
+
   ai = activation_vector[:,0*v_size:0*v_size+(v_size)]
   af = activation_vector[:,1*v_size:1*v_size+(v_size)]
   ao = activation_vector[:,2*v_size:2*v_size+(v_size)]
@@ -351,7 +347,7 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
   # Step 4 compute next hidden state
   next_h = o * np.tanh(next_c)
 
-  cache = (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, activation_vector, next_c, prev_c)
+  cache = (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, next_c, prev_c)
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
@@ -383,7 +379,7 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
   # HINT: For sigmoid and tanh you can compute local derivatives in terms of  #
   # the output value from the nonlinearity.                                   #
   #############################################################################
-  (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, activation_vector, next_c, prev_c) = cache
+  (i,f,o,g,ai,af,ao,ag, prev_h, Wh, x, Wx, next_c, prev_c) = cache
 
   # 4 backprop into next_h = o * np.tanh(next_c)
   do = np.tanh(next_c) * dnext_h
@@ -451,7 +447,23 @@ def lstm_forward(x, h0, Wx, Wh, b):
   # TODO: Implement the forward pass for an LSTM over an entire timeseries.   #
   # You should use the lstm_step_forward function that you just defined.      #
   #############################################################################
-  pass
+  
+  N,T,D = x.shape
+  _,H = h0.shape
+  # cell shape (N,H)
+  c0 = np.zeros((N,H))
+  h = np.zeros((N,T,H))
+  cache = []
+  for t in xrange(T):
+    if t == 0:
+      prev_c = c0
+      prev_h = h0
+
+    # lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b)
+    prev_h, prev_c, cache_t = lstm_step_forward(x[:,t,:], prev_h, prev_c, Wx, Wh, b)
+    cache.append(cache_t)
+    h[:,t,:] = prev_h
+
   ##############################################################################
   #                               END OF YOUR CODE                             #
   ##############################################################################
