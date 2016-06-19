@@ -148,7 +148,10 @@ class CaptioningRNN(object):
 
     # 3  output (N, T, H)
     x = w_v
-    h_all, rnn_fwd_cache = rnn_forward(x, h0, Wx, Wh, b)
+    if self.cell_type == 'lstm':
+        h_all, fwd_cache = lstm_forward(x, h0, Wx, Wh, b)
+    else:
+        h_all, fwd_cache = rnn_forward(x, h0, Wx, Wh, b)
 
     # 4 temporal affine transformation to compute scores over vocabulary
     scores, af_c = temporal_affine_forward(h_all, W_vocab, b_vocab)
@@ -158,7 +161,11 @@ class CaptioningRNN(object):
 
 
     dx, dW_vocab, db_vocab = temporal_affine_backward(dx, af_c)
-    dx, dh0, dWx, dWh, db = rnn_backward(dx, rnn_fwd_cache)
+
+    if self.cell_type == 'lstm':
+        dx, dh0, dWx, dWh, db = lstm_backward(dx, fwd_cache)
+    else:
+        dx, dh0, dWx, dWh, db = rnn_backward(dx, fwd_cache)
     dW_embed = word_embedding_backward(dx, w_v_c)
 
 
