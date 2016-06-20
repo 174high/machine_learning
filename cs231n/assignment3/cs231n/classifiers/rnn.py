@@ -264,9 +264,16 @@ class CaptioningRNN(object):
     captions[:,0] = self._start
     # 1
     x = W_embed[captions[:,0]]
+
+    H,_ = Wh.shape
+    prev_c = np.zeros((N, H))
+
     for t in xrange(max_length):
         # 2
-        next_h,_ = rnn_step_forward(x, next_h, Wx, Wh, b)
+        if self.cell_type == 'lstm':
+            next_h, prev_c, _ = lstm_step_forward(x, next_h, prev_c, Wx, Wh, b)
+        else:
+            next_h,_ = rnn_step_forward(x, next_h, Wx, Wh, b)
         # 3
         scores = np.dot(next_h, W_vocab) + b_vocab
         # 4
